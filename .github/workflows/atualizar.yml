@@ -1,0 +1,50 @@
+name: Atualizar analisador B3
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 18h30 em Brasília (UTC-3), de segunda a sexta.
+    # O GitHub pode iniciar tarefas agendadas com algum atraso.
+    - cron: '30 21 * * 1-5'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizacao-diaria-b3
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependências
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Coletar cotações e calcular análises
+        run: python atualizar.py
+
+      - name: Salvar histórico e resultados no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dados/*.csv dados/analises.json
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração de dados para publicar."
+          else
+            git commit -m "Atualização diária do analisador B3"
+            git push
+          fi
