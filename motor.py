@@ -411,7 +411,21 @@ def construir_pnf(dados, box, reversao=3):
 # HISTÓRICO P&F - ÚLTIMOS 6 MESES
 # ============================================================
 
+
 def obter_historico_pnf(dados):
+
+    if dados.empty:
+        return dados
+
+    dados = dados.copy()
+
+    # Garantir que a coluna Data seja do tipo datetime
+    dados["Data"] = pd.to_datetime(
+        dados["Data"],
+        errors="coerce"
+    )
+
+    dados = dados.dropna(subset=["Data"])
 
     if dados.empty:
         return dados
