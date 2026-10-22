@@ -772,8 +772,8 @@ def analisar(dados):
         and pd.notna(volume_medio)
         and volume_medio > 0
 ):
-    volume_relativo = (
-        linha["Volume"] / volume_medio
+        volume_relativo = (
+            linha["Volume"] / volume_medio
     )
 else:
     volume_relativo = np.nan
