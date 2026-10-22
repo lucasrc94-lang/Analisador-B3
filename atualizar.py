@@ -197,12 +197,7 @@ def main():
     erros = []
     for ativo in ativos:
         try:
-            dados = coletar_dados(ativo)
-
-            if ativo == "ABEV3":
-                print("\nTESTE DE COLETA — ABEV3")
-                print(dados.tail(1).to_string(index=False))
-    
+            dados = coletar_dados(ativo)    
             resultado = analisar(dados)
             if not resultado:
                 raise ValueError("Motor não conseguiu produzir uma análise (ATR/histórico insuficiente).")
