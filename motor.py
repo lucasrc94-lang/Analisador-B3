@@ -609,90 +609,119 @@ def calcular_projecoes_atr(
 # ============================================================
 
 
-def estimar_pregoes_historicos(dados, tendencia, alvo, n_movimentos=3):
+
+def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
     """
-    Estima pregões até o alvo usando amplitude e duração
-    dos últimos três movimentos históricos concluídos.
+    Reproduz os cálculos do analisador original:
+    amplitude média em reais, amplitude percentual média,
+    duração média e projeções históricas.
     """
 
     if tendencia not in ("ALTA", "BAIXA"):
         return None
 
-    if alvo is None or pd.isna(alvo):
-        return None
-
     dados = dados.reset_index(drop=True).copy()
 
-    if len(dados) < 20:
+    if tendencia == "ALTA":
+        coluna_condicao = dados["Fechamento"] > dados["MME21"]
+    else:
+        coluna_condicao = dados["Fechamento"] < dados["MME21"]
+
+    ondas = []
+    onda_atual = []
+
+    for i, ativo_na_onda in enumerate(coluna_condicao.tolist()):
+        if ativo_na_onda:
+            onda_atual.append(i)
+        else:
+            if len(onda_atual) >= 3:
+                ondas.append(onda_atual)
+            onda_atual = []
+
+    if len(onda_atual) >= 3:
+        ondas.append(onda_atual)
+
+    # Mantém a regra do código original:
+    # a última onda identificada é excluída da análise.
+    if len(ondas) > n_movimentos:
+        ondas_concluidas = ondas[-n_movimentos-1:-1]
+    else:
+        ondas_concluidas = ondas[:-1]
+
+    if not ondas_concluidas:
         return None
 
-    if tendencia == "ALTA":
-        condicao = dados["Fechamento"] > dados["MME21"]
-    else:
-        condicao = dados["Fechamento"] < dados["MME21"]
+    metricas = []
 
-    # Identificar movimentos concluídos.
-    ondas = []
-    inicio = None
+    for indices in ondas_concluidas:
+        onda = dados.iloc[indices].copy()
 
-    for i, ativo_na_onda in enumerate(condicao.tolist()):
-        if ativo_na_onda and inicio is None:
-            inicio = i
-        elif not ativo_na_onda and inicio is not None:
-            ondas.append((inicio, i - 1))
-            inicio = None
-
-    # Não incluir uma onda que continua ativa no último pregão.
-    ondas_validas = []
-
-    for inicio_onda, fim_onda in ondas:
-        onda = dados.iloc[inicio_onda:fim_onda + 1]
-
-        if len(onda) < 3:
-            continue
+        preco_inicial = float(onda["Fechamento"].iloc[0])
 
         if tendencia == "ALTA":
+            preco_extremo = float(onda["Maxima"].max())
             indice_extremo = onda["Maxima"].idxmax()
-            amplitude = (
-                onda["Maxima"].max()
-                - onda["Fechamento"].iloc[0]
-            )
+            amplitude = preco_extremo - preco_inicial
         else:
+            preco_extremo = float(onda["Minima"].min())
             indice_extremo = onda["Minima"].idxmin()
-            amplitude = (
-                onda["Fechamento"].iloc[0]
-                - onda["Minima"].min()
-            )
+            amplitude = preco_inicial - preco_extremo
 
-        duracao = indice_extremo - inicio_onda + 1
+        duracao = int(indice_extremo - indices[0] + 1)
 
-        if amplitude > 0 and duracao > 0:
-            ondas_validas.append({
-                "amplitude": float(amplitude),
-                "duracao": int(duracao)
-            })
+        if preco_inicial <= 0 or amplitude <= 0 or duracao <= 0:
+            continue
 
-    ultimas = ondas_validas[-n_movimentos:]
+        amplitude_pct = amplitude / preco_inicial * 100
 
-    if len(ultimas) < n_movimentos:
+        metricas.append({
+            "amplitude": amplitude,
+            "amplitude_pct": amplitude_pct,
+            "duracao": duracao
+        })
+
+    if not metricas:
         return None
 
-    amplitude_media = np.mean(
-        [onda["amplitude"] for onda in ultimas]
-    )
-    duracao_media = np.mean(
-        [onda["duracao"] for onda in ultimas]
-    )
+    media_amplitude = float(np.mean(
+        [m["amplitude"] for m in metricas]
+    ))
+    media_amplitude_pct = float(np.mean(
+        [m["amplitude_pct"] for m in metricas]
+    ))
+    media_duracao = float(np.mean(
+        [m["duracao"] for m in metricas]
+    ))
 
-    preco_atual = dados["Fechamento"].iloc[-1]
-    distancia = abs(float(alvo) - float(preco_atual))
+    preco_atual = float(dados["Fechamento"].iloc[-1])
 
-    if amplitude_media <= 0:
-        return None
+    if tendencia == "ALTA":
+        alvo_rs = preco_atual + media_amplitude
+        alvo_pct = preco_atual * (1 + media_amplitude_pct / 100)
+    else:
+        alvo_rs = preco_atual - media_amplitude
+        alvo_pct = preco_atual * (1 - media_amplitude_pct / 100)
 
-    estimativa = distancia / amplitude_media * duracao_media
+    resultado = {
+        "media_amplitude_historica": media_amplitude,
+        "media_amplitude_pct_historica": media_amplitude_pct,
+        "tempo_medio_movimento": media_duracao,
+        "alvo_amplitude_historica": float(alvo_rs),
+        "alvo_percentual_historico": float(alvo_pct)
+    }
 
-    return max(1, int(math.ceil(estimativa)))
+    # Estimativa proporcional até o alvo técnico, caso exista.
+    if alvo is not None and not pd.isna(alvo) and media_amplitude > 0:
+        distancia = abs(float(alvo) - preco_atual)
+        resultado["pregoes_estimados_historico"] = max(
+            1, int(math.ceil(distancia / media_amplitude * media_duracao))
+        )
+    else:
+        resultado["pregoes_estimados_historico"] = None
+
+    return resultado
+
+
 
 
 def analisar(dados):
@@ -745,9 +774,15 @@ def analisar(dados):
             linha["Volume"] /
             volume_medio
         )
-
     else:
         volume_relativo = np.nan
+
+    # Calcular o histórico ANTES do return.
+    historico = estimar_pregoes_historicos(
+        dados,
+        tendencia,
+        alvo.get("alvo") if isinstance(alvo, dict) else None
+    )
 
     return {
         "data": linha["Data"],
@@ -764,11 +799,11 @@ def analisar(dados):
         "aceleracao": aceleracao,
         "niveis": niveis,
         "alvo": alvo,
-        "pregoes_estimados_historico": estimar_pregoes_historicos(
-    dados,
-    tendencia,
-    alvo.get("alvo")
-),
+        "projecao_historica": historico,
+        "pregoes_estimados_historico": (
+            historico.get("pregoes_estimados_historico")
+            if historico else None
+        ),
         "projecoes": projecoes
     }
 
