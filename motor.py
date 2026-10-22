@@ -767,15 +767,16 @@ def analisar(dados):
     volume_medio = linha["VolumeMedia20"]
 
     if (
-        pd.notna(volume_medio)
+        pd.notna(linha["Volume"])
+        and linha["Volume"] > 0
+        and pd.notna(volume_medio)
         and volume_medio > 0
-    ):
-        volume_relativo = (
-            linha["Volume"] /
-            volume_medio
-        )
-    else:
-        volume_relativo = np.nan
+):
+    volume_relativo = (
+        linha["Volume"] / volume_medio
+    )
+else:
+    volume_relativo = np.nan
 
     # Calcular o histórico ANTES do return.
     historico = estimar_pregoes_historicos(
