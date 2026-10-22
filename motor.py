@@ -780,19 +780,19 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
     }
 
     # Estimar os pregões até o alvo baseado na amplitude histórica.
-if media_amplitude > 0 and media_duracao > 0:
-    distancia = abs(alvo_rs - preco_atual)
+    if media_amplitude > 0 and media_duracao > 0:
+        distancia = abs(alvo_rs - preco_atual)
 
-    resultado["pregoes_estimados_historico"] = max(
-        1,
-        int(math.ceil(
-            distancia / media_amplitude * media_duracao
-        ))
-    )
-else:
-    resultado["pregoes_estimados_historico"] = None
+        resultado["pregoes_estimados_historico"] = max(
+            1,
+            int(math.ceil(
+                distancia / media_amplitude * media_duracao
+            ))
+        )
+    else:
+        resultado["pregoes_estimados_historico"] = None
 
-return resultado
+    return resultado
 
 
 
