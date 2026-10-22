@@ -135,7 +135,7 @@ def auditar_sinais(dados):
             "Nivel_rompimento": nivel_rompimento,
             "Data_confirmacao": data_confirmacao,
             "Fechamento_entrada": fechamento_entrada,
-            "Candles_ate_confirmacao": candles_ate
+            "Candles_ate_confirmacao": candles_ate,
             "MME21_subindo",
             "MME21_caindo",
             "MME200_subindo",
