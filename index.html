@@ -135,7 +135,7 @@ footer {
       <button id="recarregar">Atualizar dados</button>
     </div>
 
-    <div id="status">Lendo analisa.json...</div>
+    <div id="status">Lendo analises.json...</div>
 
     <div class="table-wrap">
       <table>
@@ -160,7 +160,7 @@ footer {
   </section>
 
   <footer>
-    Dados obtidos de analisa.json. Os indicadores são referências técnicas
+    Dados obtidos de analises.json. Os indicadores são referências técnicas
     e não constituem recomendação de investimento.
   </footer>
 </main>
@@ -271,7 +271,7 @@ function renderizar() {
 
 async function carregar() {
   const status = document.getElementById("status");
-  status.textContent = "Carregando analisa.json...";
+  status.textContent = "Carregando analises.json...";
   status.className = "";
 
   try {
@@ -307,7 +307,7 @@ async function carregar() {
     status.className = "error";
     status.textContent =
       "Não foi possível carregar os dados: " + erro.message +
-      ". Confira se analisa.json está na pasta principal do repositório.";
+      ". Confira se analises.json está na pasta principal do repositório.";
   }
 }
 
