@@ -139,9 +139,35 @@ def simplificar(resultado: dict, ativo: str) -> dict:
         "fundo_pnf": ultima.get("fundo"),
         "suporte_pnf": niveis.get("suporte"),
         "resistencia_pnf": niveis.get("resistencia"),
+        
         "alvo_tecnico": alvo.get("alvo"),
         "distancia_alvo": alvo.get("distancia"),
         "distancia_alvo_atr": alvo.get("distancia_atr"),
+
+        "alvo_amplitude_historica": (
+            resultado.get("projecao_historica") or {}
+        ).get("alvo_amplitude_historica"),
+
+        "alvo_percentual_historico": (
+            resultado.get("projecao_historica") or {}
+        ).get("alvo_percentual_historico"),
+
+        "media_amplitude_historica": (
+            resultado.get("projecao_historica") or {}
+        ).get("media_amplitude_historica"),
+
+        "media_amplitude_pct_historica": (
+            resultado.get("projecao_historica") or {}
+        ).get("media_amplitude_pct_historica"),
+
+        "tempo_medio_movimento": (
+            resultado.get("projecao_historica") or {}
+        ).get("tempo_medio_movimento"),
+
+        "movimentos_historicos": (
+            resultado.get("projecao_historica") or {}
+        ).get("movimentos_historicos"),
+
         "pregoes_estimados": resultado.get(
         "pregoes_estimados_historico"
 ),
