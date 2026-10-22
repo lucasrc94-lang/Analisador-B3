@@ -63,10 +63,6 @@ def coletar_dados(ativo: str, tentativas: int = 3) -> pd.DataFrame:
                 "Fechamento": quote.get("close"),
                 "Volume": quote.get("volume"),
             })
-            print(f"DEBUG {ticker} — volume recebido: {df['Volume'].tail(5).tolist()}")
-            print(f"DEBUG {ticker} — tipo do volume: {df['Volume'].dtype}")
-            print(f"DEBUG {ticker} — últimos volumes e datas:")
-            print(df[["Data", "Volume"]].tail(5).to_string(index=False))
             
             df = df[COLUNAS].dropna(subset=["Data", "Abertura", "Maxima", "Minima", "Fechamento", "Volume"])
             for c in COLUNAS[1:]:
