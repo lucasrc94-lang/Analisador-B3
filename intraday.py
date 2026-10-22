@@ -172,83 +172,30 @@ def gerar_sinais_intraday(
 
     dados = dados.sort_values("Data").reset_index(drop=True)
 
-    # Tendência
-    dados["EMA9"] = dados["Fechamento"].ewm(
-        span=PERIODO_EMA_RAPIDA,
-        adjust=False
-    ).mean()
+    # Tendência baseada na MME21 e MME200
+dados["MME21"] = dados["Fechamento"].ewm(
+    span=PERIODO_MME21,
+    adjust=False
+).mean()
 
-    dados["EMA21"] = dados["Fechamento"].ewm(
-        span=PERIODO_EMA_LENTA,
-        adjust=False
-    ).mean()
+dados["MME200"] = dados["Fechamento"].ewm(
+    span=PERIODO_MME200,
+    adjust=False
+).mean()
 
-    dados["Tendencia"] = np.select(
-        [
-            (
-                (dados["EMA9"] > dados["EMA21"])
-                & (dados["Fechamento"] > dados["EMA21"])
-            ),
-            (
-                (dados["EMA9"] < dados["EMA21"])
-                & (dados["Fechamento"] < dados["EMA21"])
-            )
-        ],
-        ["ALTA", "BAIXA"],
-        default="LATERAL"
-    )
-
-    # Rompimento: usa somente os candles anteriores.
-    dados["Maxima_anterior"] = (
-        dados["Maxima"]
-        .shift(1)
-        .rolling(PERIODO_ROMPIMENTO)
-        .max()
-    )
-
-    dados["Minima_anterior"] = (
-        dados["Minima"]
-        .shift(1)
-        .rolling(PERIODO_ROMPIMENTO)
-        .min()
-    )
-
-    # Volume médio dos 20 candles anteriores.
-    dados["Volume_medio_anterior"] = (
-        dados["Volume"]
-        .shift(1)
-        .rolling(PERIODO_VOLUME)
-        .mean()
-    )
-
-    dados["Volume_confirmado"] = (
-        dados["Volume"]
-        > dados["Volume_medio_anterior"]
-        * MULTIPLICADOR_VOLUME
-    )
-
-    compra = (
-        (dados["Tendencia"] == "ALTA")
-        & (
-            dados["Fechamento"]
-            > dados["Maxima_anterior"]
+dados["Tendencia"] = np.select(
+    [
+        (
+            (dados["MME21"] > dados["MME200"])
+            & (dados["Fechamento"] > dados["MME21"])
+        ),
+        (
+            (dados["MME21"] < dados["MME200"])
+            & (dados["Fechamento"] < dados["MME21"])
         )
-        & dados["Volume_confirmado"]
-    )
-
-    venda = (
-        (dados["Tendencia"] == "BAIXA")
-        & (
-            dados["Fechamento"]
-            < dados["Minima_anterior"]
-        )
-        & dados["Volume_confirmado"]
-    )
-
-    dados["Sinal"] = np.select(
-        [compra, venda],
-        ["COMPRA", "VENDA"],
-        default="SEM SINAL"
-    )
+    ],
+    ["ALTA", "BAIXA"],
+    default="LATERAL"
+)
 
     return dados
