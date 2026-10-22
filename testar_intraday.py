@@ -144,12 +144,118 @@ def auditar_sinais(dados):
 
     return pd.DataFrame(linhas)
 
-def avaliar_movimentos(dados, auditoria):
+
+def calcular_historico_movimento(dados, indice_entrada, tipo):
     """
-    Mede o movimento favorável e contrário após cada entrada confirmada.
-    Os horizontes são de 3, 5 e 10 candles após a entrada.
+    Calcula a média das últimas 3 ondas históricas concluídas,
+    na janela de 6 meses anterior à entrada.
+
+    Utiliza amplitude em reais e percentual, seguindo
+    a metodologia do analisador diário. Não usa ATR
+    para calcular as projeções históricas.
     """
 
+    historico = dados.iloc[:indice_entrada + 1].copy()
+
+    if historico.empty:
+        return None
+
+    data_entrada = historico["Data"].iloc[-1]
+    data_inicial = data_entrada - pd.DateOffset(months=6)
+
+    historico = historico[
+        historico["Data"] >= data_inicial
+    ].copy().reset_index(drop=True)
+
+    if historico.empty:
+        return None
+
+    if tipo == "COMPRA":
+        historico["Dentro_movimento"] = (
+            historico["Fechamento"] > historico["MME21"]
+        )
+    else:
+        historico["Dentro_movimento"] = (
+            historico["Fechamento"] < historico["MME21"]
+        )
+
+    historico["Grupo"] = (
+        historico["Dentro_movimento"]
+        .ne(historico["Dentro_movimento"].shift())
+        .cumsum()
+    )
+
+    ondas = []
+
+    for _, grupo in historico.groupby("Grupo", sort=True):
+
+        if not grupo["Dentro_movimento"].iloc[0]:
+            continue
+
+        if len(grupo) < 3:
+            continue
+
+        # Não usar a onda que ainda está ativa na entrada.
+        if grupo.index[-1] == historico.index[-1]:
+            continue
+
+        preco_inicial = float(grupo["Fechamento"].iloc[0])
+
+        if preco_inicial <= 0:
+            continue
+
+        if tipo == "COMPRA":
+            extremo = float(grupo["Maxima"].max())
+            indice_extremo = grupo["Maxima"].idxmax()
+            amplitude = extremo - preco_inicial
+        else:
+            extremo = float(grupo["Minima"].min())
+            indice_extremo = grupo["Minima"].idxmin()
+            amplitude = preco_inicial - extremo
+
+        if amplitude <= 0:
+            continue
+
+        percentual = amplitude / preco_inicial * 100
+        duracao = int(indice_extremo - grupo.index[0] + 1)
+
+        ondas.append({
+            "DataInicial": grupo["Data"].iloc[0],
+            "Amplitude": amplitude,
+            "Percentual": percentual,
+            "Duracao": duracao
+        })
+
+    # Segue o padrão de usar até as 3 ondas concluídas mais recentes.
+    ondas = ondas[-3:]
+
+    if not ondas:
+        return None
+
+    return {
+        "Ondas_historicas": len(ondas),
+        "Amplitude_media_historica": sum(
+            onda["Amplitude"] for onda in ondas
+        ) / len(ondas),
+        "Percentual_medio_historico": sum(
+            onda["Percentual"] for onda in ondas
+        ) / len(ondas),
+        "Duracao_media_historica": sum(
+            onda["Duracao"] for onda in ondas
+        ) / len(ondas)
+    }
+
+
+def avaliar_movimentos(dados, auditoria):
+    """
+    Mede o movimento favorável e contrário após cada entrada
+    confirmada, nos horizontes de 3, 5 e 10 candles.
+
+    Compara os resultados com a amplitude e o percentual
+    históricos das ondas concluídas nos 6 meses anteriores.
+    """
+
+    dados = dados.reset_index(drop=True).copy()
     resultados = []
 
     confirmadas = auditoria[
@@ -168,19 +274,50 @@ def avaliar_movimentos(dados, auditoria):
         if len(indices) == 0:
             continue
 
-        indice_entrada = dados.index.get_loc(indices[0])
+        indice_entrada = int(indices[0])
         preco_entrada = float(
-            dados.loc[indices[0], "Fechamento"]
+            dados.loc[indice_entrada, "Fechamento"]
+        )
+
+        historico = calcular_historico_movimento(
+            dados,
+            indice_entrada,
+            tipo
         )
 
         resultado = {
             "Data_entrada": data_entrada,
             "Tipo": tipo,
-            "Preco_entrada": preco_entrada,
-            "ATR_entrada": float(
-                dados.loc[indices[0], "ATR14"]
-            ),
+            "Preco_entrada": preco_entrada
         }
+
+        if historico is None:
+            resultado.update({
+                "Ondas_historicas": 0,
+                "Amplitude_media_historica": None,
+                "Percentual_medio_historico": None,
+                "Duracao_media_historica": None,
+                "Alvo_amplitude_historica": None,
+                "Alvo_percentual_historico": None
+            })
+        else:
+            amplitude_media = historico[
+                "Amplitude_media_historica"
+            ]
+            percentual_medio = historico[
+                "Percentual_medio_historico"
+            ]
+
+            sinal_direcao = 1 if tipo == "COMPRA" else -1
+
+            resultado.update(historico)
+            resultado["Alvo_amplitude_historica"] = (
+                preco_entrada + sinal_direcao * amplitude_media
+            )
+            resultado["Alvo_percentual_historico"] = (
+                preco_entrada
+                * (1 + sinal_direcao * percentual_medio / 100)
+            )
 
         for horizonte in [3, 5, 10]:
 
@@ -193,61 +330,53 @@ def avaliar_movimentos(dados, auditoria):
             if inicio > fim:
                 resultado[f"Favoravel_{horizonte}"] = None
                 resultado[f"Contrario_{horizonte}"] = None
+                resultado[f"Favoravel_pct_{horizonte}"] = None
+                resultado[f"Contrario_pct_{horizonte}"] = None
                 resultado[f"Candles_disponiveis_{horizonte}"] = 0
                 continue
 
             janela = dados.iloc[inicio:fim + 1]
 
             if tipo == "COMPRA":
-                movimento_favoravel = (
+                favoravel = (
                     janela["Maxima"].max() - preco_entrada
                 )
-                movimento_contrario = (
+                contrario = (
                     preco_entrada - janela["Minima"].min()
                 )
-
             else:
-                movimento_favoravel = (
+                favoravel = (
                     preco_entrada - janela["Minima"].min()
                 )
-                movimento_contrario = (
+                contrario = (
                     janela["Maxima"].max() - preco_entrada
                 )
 
             resultado[f"Favoravel_{horizonte}"] = round(
-                float(movimento_favoravel), 3
+                float(favoravel), 3
             )
             resultado[f"Contrario_{horizonte}"] = round(
-                float(movimento_contrario), 3
+                float(contrario), 3
+            )
+            resultado[f"Favoravel_pct_{horizonte}"] = round(
+                float(favoravel / preco_entrada * 100), 3
+            )
+            resultado[f"Contrario_pct_{horizonte}"] = round(
+                float(contrario / preco_entrada * 100), 3
             )
             resultado[f"Candles_disponiveis_{horizonte}"] = len(
                 janela
             )
-          
-            atr_entrada = resultado["ATR_entrada"]
-
-            if pd.notna(atr_entrada) and atr_entrada > 0:
-                resultado[f"Favoravel_ATR_{horizonte}"] = round(
-                    float(movimento_favoravel / atr_entrada), 3
-            )
-                resultado[f"Contrario_ATR_{horizonte}"] = round(
-                    float(movimento_contrario / atr_entrada), 3
-            )
-            else:
-                resultado[f"Favoravel_ATR_{horizonte}"] = None
-                resultado[f"Contrario_ATR_{horizonte}"] = None
 
         resultados.append(resultado)
 
     return pd.DataFrame(resultados)
 
 
-
 def resumir_movimentos(movimentos):
     """
-    Resume os movimentos em ATR por tipo de operação
-    e por horizonte de 3, 5 e 10 candles.
-    Considera apenas horizontes completos.
+    Resume amplitudes favoráveis e contrárias em reais e percentual.
+    Considera somente horizontes com todos os candles disponíveis.
     """
 
     resultados = []
@@ -266,46 +395,41 @@ def resumir_movimentos(movimentos):
 
         for horizonte in [3, 5, 10]:
 
-            coluna_favoravel = f"Favoravel_ATR_{horizonte}"
-            coluna_contrario = f"Contrario_ATR_{horizonte}"
             coluna_candles = f"Candles_disponiveis_{horizonte}"
 
-            # Exclui entradas sem horizonte completo.
             completo = grupo[
                 grupo[coluna_candles] == horizonte
             ].copy()
 
-            favoraveis = completo[
-                coluna_favoravel
-            ].dropna()
-
-            contrarios = completo[
-                coluna_contrario
-            ].dropna()
-
-            resultados.append({
+            linha = {
                 "Tipo": tipo,
-                "Horizonte": horizonte,
-                "Operacoes": len(completo),
-                "Media_favoravel_ATR": (
-                    round(favoraveis.mean(), 3)
-                    if not favoraveis.empty else None
-                ),
-                "Mediana_favoravel_ATR": (
-                    round(favoraveis.median(), 3)
-                    if not favoraveis.empty else None
-                ),
-                "Media_contraria_ATR": (
-                    round(contrarios.mean(), 3)
-                    if not contrarios.empty else None
-                ),
-                "Mediana_contraria_ATR": (
-                    round(contrarios.median(), 3)
-                    if not contrarios.empty else None
-                ),
-            })
+                "Horizonte_candles": horizonte,
+                "Operacoes": len(completo)
+            }
+
+            for nome, coluna in [
+                ("Media_favoravel_R$", f"Favoravel_{horizonte}"),
+                ("Mediana_favoravel_R$", f"Favoravel_{horizonte}"),
+                ("Media_contraria_R$", f"Contrario_{horizonte}"),
+                ("Mediana_contraria_R$", f"Contrario_{horizonte}"),
+                ("Media_favoravel_pct", f"Favoravel_pct_{horizonte}"),
+                ("Mediana_favoravel_pct", f"Favoravel_pct_{horizonte}"),
+                ("Media_contraria_pct", f"Contrario_pct_{horizonte}"),
+                ("Mediana_contraria_pct", f"Contrario_pct_{horizonte}")
+            ]:
+                valores = completo[coluna].dropna()
+
+                if valores.empty:
+                    linha[nome] = None
+                elif nome.startswith("Media"):
+                    linha[nome] = round(float(valores.mean()), 3)
+                else:
+                    linha[nome] = round(float(valores.median()), 3)
+
+            resultados.append(linha)
 
     return pd.DataFrame(resultados)
+
 
 
 def testar():
@@ -380,7 +504,7 @@ def testar():
         else:
             print(movimentos.round(3).to_string(index=False))
             print("\n" + "=" * 80)
-            print("RESUMO ESTATISTICO DOS MOVIMENTOS EM ATR")
+            print("RESUMO ESTATISTICO — AMPLITUDE E PERCENTUAL")
             print("=" * 80)
 
             if resumo.empty:
