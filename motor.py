@@ -173,58 +173,30 @@ def analisar_aceleracao(dados):
 # CLASSIFICAÇÃO DA TENDÊNCIA
 # ============================================================
 
+
 def classificar_tendencia(linha):
 
     preco = linha["Fechamento"]
     mme21 = linha["MME21"]
     mme200 = linha["MME200"]
-    atr = linha["ATR14"]
 
-    if pd.isna(atr) or atr <= 0:
-        return "CONSOLIDAÇÃO"
-
-    distancia_mm = abs(mme21 - mme200)
-
-    # --------------------------------------------------------
-    # Consolidação quando MME21 e MME200 estão muito próximas
-    # em relação ao ATR.
-    # --------------------------------------------------------
-
-    if distancia_mm / atr <= LIMITE_CONSOLIDACAO_ATR:
-        return "CONSOLIDAÇÃO"
-
-    # --------------------------------------------------------
-    # ALTA
-    # --------------------------------------------------------
-
+    # ALTA — regra original
     if (
-        mme21 > mme200 and
         preco > mme21
+        and mme21 > mme200
     ):
         return "ALTA"
 
-    # --------------------------------------------------------
-    # BAIXA
-    # --------------------------------------------------------
-
-    if (
-        mme21 < mme200 and
+    # BAIXA — regra original
+    elif (
         preco < mme21
+        and mme21 < mme200
     ):
         return "BAIXA"
 
-    # --------------------------------------------------------
-    # Quando as médias indicam direção, mas o preço está
-    # fazendo correção.
-    # --------------------------------------------------------
-
-    if mme21 > mme200:
-        return "ALTA"
-
-    if mme21 < mme200:
-        return "BAIXA"
-
-    return "CONSOLIDAÇÃO"
+    # CONSOLIDAÇÃO — demais situações
+    else:
+        return "CONSOLIDAÇÃO"
 
 
 # ============================================================
