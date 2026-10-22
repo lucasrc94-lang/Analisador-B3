@@ -141,7 +141,9 @@ def simplificar(resultado: dict, ativo: str) -> dict:
         "alvo_tecnico": alvo.get("alvo"),
         "distancia_alvo": alvo.get("distancia"),
         "distancia_alvo_atr": alvo.get("distancia_atr"),
-        "pregoes_estimados": (abs(alvo.get("distancia")) / resultado.get("atr") if alvo.get("distancia") is not None and resultado.get("atr") is not None and resultado.get("atr") > 0 else None),
+        "pregoes_estimados": resultado.get(
+    "pregoes_estimados_historico"
+),
         "tipo_alvo": alvo.get("tipo"),
         "projecao_atr1": proj.get("ATR1"),
         "projecao_atr2": proj.get("ATR2"),
