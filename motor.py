@@ -653,7 +653,10 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
 
     metricas = []
 
-    for indices in ondas_concluidas:
+    for numero, indices in enumerate(
+    ondas_concluidas,
+    start=1
+):
         onda = dados.iloc[indices].copy()
 
         preco_inicial = float(onda["Fechamento"].iloc[0])
@@ -678,6 +681,15 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
             "amplitude": amplitude,
             "amplitude_pct": amplitude_pct,
             "duracao": duracao
+            "movimento": f"{tendencia.title()} #{numero}",
+            "inicio": pd.to_datetime(
+                onda["Data"].iloc[0]
+            ).strftime("%Y-%m-%d"),
+            "data_extremo": pd.to_datetime(
+                onda.loc[indice_extremo, "Data"]
+            ).strftime("%Y-%m-%d"),
+            "preco_inicial": preco_inicial,
+            "preco_extremo": preco_extremo,
         })
 
     if not metricas:
@@ -708,6 +720,7 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
         "tempo_medio_movimento": media_duracao,
         "alvo_amplitude_historica": float(alvo_rs),
         "alvo_percentual_historico": float(alvo_pct)
+        "movimentos_historicos": metricas,
     }
 
     # Estimativa proporcional até o alvo técnico, caso exista.
