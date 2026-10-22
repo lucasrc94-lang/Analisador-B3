@@ -142,7 +142,7 @@ def simplificar(resultado: dict, ativo: str) -> dict:
         "distancia_alvo": alvo.get("distancia"),
         "distancia_alvo_atr": alvo.get("distancia_atr"),
         "pregoes_estimados": resultado.get(
-    "pregoes_estimados_historico"
+        "pregoes_estimados_historico"
 ),
         "tipo_alvo": alvo.get("tipo"),
         "projecao_atr1": proj.get("ATR1"),
