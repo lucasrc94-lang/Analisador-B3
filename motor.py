@@ -792,7 +792,7 @@ if media_amplitude > 0 and media_duracao > 0:
 else:
     resultado["pregoes_estimados_historico"] = None
 
-    return resultado
+return resultado
 
 
 
