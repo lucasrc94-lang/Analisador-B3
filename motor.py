@@ -616,11 +616,17 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
     amplitude média em reais, amplitude percentual média,
     duração média e projeções históricas.
     """
-
+   
     if tendencia not in ("ALTA", "BAIXA"):
         return None
 
+    # Analisar somente os últimos seis meses de pregões.
+    dados = obter_historico_pnf(dados)
     dados = dados.reset_index(drop=True).copy()
+
+    if dados.empty:
+        return None
+
 
     if tendencia == "ALTA":
         coluna_condicao = dados["Fechamento"] > dados["MME21"]
