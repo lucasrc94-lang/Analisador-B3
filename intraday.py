@@ -227,9 +227,13 @@ def gerar_sinais_intraday(
     )
 
     dados["Volume_confirmado"] = (
+    dados["Volume"].gt(0)
+    & dados["Volume_medio_anterior"].notna()
+    & (
         dados["Volume"]
         >= dados["Volume_medio_anterior"]
     )
+)
 
     # --------------------------------------------------
     # 4. FORMATO DO CANDLE
@@ -320,7 +324,7 @@ def gerar_sinais_intraday(
     ] = "AGUARDANDO CONFIRMAÇÃO"
 
     # Confirmação somente em candle posterior.
-    for i in range(2, len(dados)):
+    for i in range(1, len(dados)):
 
         # Compra: fechamento cruza a máxima do candle
         # de rejeição, ocorrido um ou dois candles antes.
@@ -356,5 +360,3 @@ def gerar_sinais_intraday(
 
     return dados
 
-
-    return dados
