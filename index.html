@@ -151,8 +151,9 @@ footer {
             <th>Velocidade</th>
             <th>Tendência</th>
             <th>Aceleração</th>
-            <th>Alvo técnico</th>
-            <th>Pregões estimados</th>
+           <th>Alvo histórico</th>
+           <th>Pregões estimados</th>
+           <th>Situação P&F</th>
           </tr>
         </thead>
         <tbody id="tabela"></tbody>
@@ -264,6 +265,7 @@ function renderizar() {
       <td>${escapar(aceleracao)}</td>
       <td>${dinheiro(a.alvo_amplitude_historica)}</td>
       <td>${a.pregoes_estimados != null ? Math.ceil(Number(a.pregoes_estimados)) + " pregões" : "—"}</td>
+      <td>${escapar(a.situacao_preco || "—")}</td>
     </tr>`;
   }).join("");
 
