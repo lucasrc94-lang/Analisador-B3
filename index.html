@@ -262,7 +262,7 @@ function renderizar() {
       <td>${escapar(a.velocidade_classificacao || a.velocidade)}</td>
       <td><span class="badge ${classe}">${escapar(tendencia)}</span></td>
       <td>${escapar(aceleracao)}</td>
-      <td>${dinheiro(a.alvo_tecnico)}</td>
+      <td>${dinheiro(a.alvo_amplitude_historica)}</td>
       <td>${a.pregoes_estimados != null ? Math.ceil(Number(a.pregoes_estimados)) + " pregões" : "—"}</td>
     </tr>`;
   }).join("");
