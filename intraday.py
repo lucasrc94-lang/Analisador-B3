@@ -140,10 +140,18 @@ def coletar_candles_intraday(
     )
 
 
+
 def gerar_sinais_intraday(
     dados: pd.DataFrame
 ) -> pd.DataFrame:
-    """Calcula tendência, rompimento, volume e sinais."""
+    """
+    Estratégia intraday:
+    tendência MME21/MME200 + pullback + rejeição
+    + confirmação por rompimento.
+
+    O sinal é registrado no fechamento do candle
+    que confirma o rompimento.
+    """
 
     dados = dados.copy()
 
@@ -151,12 +159,14 @@ def gerar_sinais_intraday(
         return dados
 
     dados = (
-        dados
-        .sort_values("Data")
+        dados.sort_values("Data")
         .reset_index(drop=True)
     )
 
-    # Médias móveis exponenciais.
+    # --------------------------------------------------
+    # 1. MÉDIAS MÓVEIS
+    # --------------------------------------------------
+
     dados["MME21"] = dados["Fechamento"].ewm(
         span=PERIODO_MME21,
         adjust=False
@@ -167,7 +177,6 @@ def gerar_sinais_intraday(
         adjust=False
     ).mean()
 
-    # Tendência.
     dados["Tendencia"] = np.select(
         [
             (
@@ -183,59 +192,169 @@ def gerar_sinais_intraday(
         default="LATERAL"
     )
 
-    # Rompimento calculado apenas com candles anteriores.
-    dados["Maxima_anterior"] = (
-        dados["Maxima"]
-        .shift(1)
-        .rolling(PERIODO_ROMPIMENTO)
-        .max()
-    )
+    # --------------------------------------------------
+    # 2. ATR DE 14 CANDLES
+    # --------------------------------------------------
 
-    dados["Minima_anterior"] = (
-        dados["Minima"]
-        .shift(1)
-        .rolling(PERIODO_ROMPIMENTO)
-        .min()
-    )
+    fechamento_anterior = dados["Fechamento"].shift(1)
 
-    # Volume médio dos candles anteriores.
+    tr1 = dados["Maxima"] - dados["Minima"]
+
+    tr2 = (
+        dados["Maxima"] - fechamento_anterior
+    ).abs()
+
+    tr3 = (
+        dados["Minima"] - fechamento_anterior
+    ).abs()
+
+    dados["TR"] = pd.concat(
+        [tr1, tr2, tr3],
+        axis=1
+    ).max(axis=1)
+
+    dados["ATR14"] = dados["TR"].rolling(14).mean()
+
+    # --------------------------------------------------
+    # 3. VOLUME: MÉDIA DOS 20 CANDLES ANTERIORES
+    # --------------------------------------------------
+
     dados["Volume_medio_anterior"] = (
         dados["Volume"]
         .shift(1)
-        .rolling(PERIODO_VOLUME)
+        .rolling(20)
         .mean()
     )
 
     dados["Volume_confirmado"] = (
         dados["Volume"]
-        > dados["Volume_medio_anterior"]
-        * MULTIPLICADOR_VOLUME
+        >= dados["Volume_medio_anterior"]
     )
 
-    # Compra: tendência de alta, rompimento e volume.
-    compra = (
+    # --------------------------------------------------
+    # 4. FORMATO DO CANDLE
+    # --------------------------------------------------
+
+    corpo = (
+        dados["Fechamento"] - dados["Abertura"]
+    ).abs()
+
+    amplitude = dados["Maxima"] - dados["Minima"]
+
+    pavio_inferior = (
+        pd.concat(
+            [dados["Abertura"], dados["Fechamento"]],
+            axis=1
+        ).min(axis=1)
+        - dados["Minima"]
+    )
+
+    pavio_superior = (
+        dados["Maxima"]
+        - pd.concat(
+            [dados["Abertura"], dados["Fechamento"]],
+            axis=1
+        ).max(axis=1)
+    )
+
+    # Fechamento no quarto superior ou inferior do candle.
+    fechamento_perto_maxima = (
+        dados["Fechamento"]
+        >= dados["Minima"] + 0.75 * amplitude
+    )
+
+    fechamento_perto_minima = (
+        dados["Fechamento"]
+        <= dados["Minima"] + 0.25 * amplitude
+    )
+
+    # --------------------------------------------------
+    # 5. PULLBACK + REJEIÇÃO
+    # --------------------------------------------------
+
+    distancia_maxima = 0.3 * dados["ATR14"]
+
+    pullback_compra = (
+        (dados["Minima"] <= dados["MME21"] + distancia_maxima)
+        & (dados["Minima"] >= dados["MME21"] - distancia_maxima)
+    )
+
+    pullback_venda = (
+        (dados["Maxima"] >= dados["MME21"] - distancia_maxima)
+        & (dados["Maxima"] <= dados["MME21"] + distancia_maxima)
+    )
+
+    rejeicao_compra = (
         (dados["Tendencia"] == "ALTA")
-        & (
-            dados["Fechamento"]
-            > dados["Maxima_anterior"]
-        )
+        & pullback_compra
+        & (pavio_inferior >= corpo)
+        & fechamento_perto_maxima
         & dados["Volume_confirmado"]
+        & (amplitude > 0)
     )
 
-    # Venda: tendência de baixa, rompimento e volume.
-    venda = (
+    rejeicao_venda = (
         (dados["Tendencia"] == "BAIXA")
-        & (
-            dados["Fechamento"]
-            < dados["Minima_anterior"]
-        )
+        & pullback_venda
+        & (pavio_superior >= corpo)
+        & fechamento_perto_minima
         & dados["Volume_confirmado"]
+        & (amplitude > 0)
     )
 
-    dados["Sinal"] = np.select(
-        [compra, venda],
+    dados["Rejeicao"] = np.select(
+        [rejeicao_compra, rejeicao_venda],
         ["COMPRA", "VENDA"],
-        default="SEM SINAL"
+        default="NENHUMA"
     )
+
+    # --------------------------------------------------
+    # 6. CONFIRMAÇÃO EM ATÉ DOIS CANDLES POSTERIORES
+    # --------------------------------------------------
+
+    dados["Sinal"] = "SEM SINAL"
+
+    dados.loc[
+        rejeicao_compra | rejeicao_venda,
+        "Sinal"
+    ] = "AGUARDANDO CONFIRMAÇÃO"
+
+    # Confirmação somente em candle posterior.
+    for i in range(2, len(dados)):
+
+        # Compra: fechamento cruza a máxima do candle
+        # de rejeição, ocorrido um ou dois candles antes.
+        if dados.loc[i, "Tendencia"] == "ALTA":
+
+            for distancia in (1, 2):
+                j = i - distancia
+
+                if dados.loc[j, "Rejeicao"] != "COMPRA":
+                    continue
+
+                if dados.loc[i - 1, "Fechamento"] <= dados.loc[j, "Maxima"] \
+                        and dados.loc[i, "Fechamento"] > dados.loc[j, "Maxima"]:
+
+                    dados.loc[i, "Sinal"] = "COMPRA CONFIRMADA"
+                    break
+
+        # Venda: fechamento cruza a mínima do candle
+        # de rejeição, ocorrido um ou dois candles antes.
+        if dados.loc[i, "Tendencia"] == "BAIXA":
+
+            for distancia in (1, 2):
+                j = i - distancia
+
+                if dados.loc[j, "Rejeicao"] != "VENDA":
+                    continue
+
+                if dados.loc[i - 1, "Fechamento"] >= dados.loc[j, "Minima"] \
+                        and dados.loc[i, "Fechamento"] < dados.loc[j, "Minima"]:
+
+                    dados.loc[i, "Sinal"] = "VENDA CONFIRMADA"
+                    break
+
+    return dados
+
 
     return dados
