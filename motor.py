@@ -687,7 +687,7 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
                 onda["Data"].iloc[0]
             ).strftime("%Y-%m-%d"),
             "data_extremo": pd.to_datetime(
-                onda.loc[indice_extremo, "Data"]
+                onda["Data"].iloc[posicao_extremo]
             ).strftime("%Y-%m-%d"),
             "preco_inicial": preco_inicial,
             "preco_extremo": preco_extremo,
