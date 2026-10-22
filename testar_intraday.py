@@ -421,7 +421,7 @@ def resumir_movimentos(movimentos):
 
                 if valores.empty:
                     linha[nome] = None
-                elif nome.startswith("Media"):
+                elif nome.startswith("Media_"):
                     linha[nome] = round(float(valores.mean()), 3)
                 else:
                     linha[nome] = round(float(valores.median()), 3)
