@@ -177,6 +177,9 @@ def avaliar_movimentos(dados, auditoria):
             "Data_entrada": data_entrada,
             "Tipo": tipo,
             "Preco_entrada": preco_entrada,
+            "ATR_entrada": float(
+                dados.loc[indices[0], "ATR14"]
+            ),
         }
 
         for horizonte in [3, 5, 10]:
@@ -220,6 +223,19 @@ def avaliar_movimentos(dados, auditoria):
             resultado[f"Candles_disponiveis_{horizonte}"] = len(
                 janela
             )
+          
+            atr_entrada = resultado["ATR_entrada"]
+
+            if pd.notna(atr_entrada) and atr_entrada > 0:
+                resultado[f"Favoravel_ATR_{horizonte}"] = round(
+                    float(movimento_favoravel / atr_entrada), 3
+            )
+                resultado[f"Contrario_ATR_{horizonte}"] = round(
+                    float(movimento_contrario / atr_entrada), 3
+            )
+            else:
+                resultado[f"Favoravel_ATR_{horizonte}"] = None
+                resultado[f"Contrario_ATR_{horizonte}"] = None
 
         resultados.append(resultado)
 
