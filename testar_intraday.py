@@ -144,6 +144,87 @@ def auditar_sinais(dados):
 
     return pd.DataFrame(linhas)
 
+def avaliar_movimentos(dados, auditoria):
+    """
+    Mede o movimento favorável e contrário após cada entrada confirmada.
+    Os horizontes são de 3, 5 e 10 candles após a entrada.
+    """
+
+    resultados = []
+
+    confirmadas = auditoria[
+        auditoria["Status"] == "CONFIRMADA"
+    ]
+
+    for _, sinal in confirmadas.iterrows():
+
+        data_entrada = sinal["Data_confirmacao"]
+        tipo = sinal["Tipo"]
+
+        indices = dados.index[
+            dados["Data"] == data_entrada
+        ]
+
+        if len(indices) == 0:
+            continue
+
+        indice_entrada = dados.index.get_loc(indices[0])
+        preco_entrada = float(
+            dados.loc[indices[0], "Fechamento"]
+        )
+
+        resultado = {
+            "Data_entrada": data_entrada,
+            "Tipo": tipo,
+            "Preco_entrada": preco_entrada,
+        }
+
+        for horizonte in [3, 5, 10]:
+
+            inicio = indice_entrada + 1
+            fim = min(
+                indice_entrada + horizonte,
+                len(dados) - 1
+            )
+
+            if inicio > fim:
+                resultado[f"Favoravel_{horizonte}"] = None
+                resultado[f"Contrario_{horizonte}"] = None
+                resultado[f"Candles_disponiveis_{horizonte}"] = 0
+                continue
+
+            janela = dados.iloc[inicio:fim + 1]
+
+            if tipo == "COMPRA":
+                movimento_favoravel = (
+                    janela["Maxima"].max() - preco_entrada
+                )
+                movimento_contrario = (
+                    preco_entrada - janela["Minima"].min()
+                )
+
+            else:
+                movimento_favoravel = (
+                    preco_entrada - janela["Minima"].min()
+                )
+                movimento_contrario = (
+                    janela["Maxima"].max() - preco_entrada
+                )
+
+            resultado[f"Favoravel_{horizonte}"] = round(
+                float(movimento_favoravel), 3
+            )
+            resultado[f"Contrario_{horizonte}"] = round(
+                float(movimento_contrario), 3
+            )
+            resultado[f"Candles_disponiveis_{horizonte}"] = len(
+                janela
+            )
+
+        resultados.append(resultado)
+
+    return pd.DataFrame(resultados)
+
 
 def testar():
 
@@ -167,6 +248,7 @@ def testar():
     dados = gerar_sinais_intraday(dados)
 
     auditoria = auditar_sinais(dados)
+    movimentos = avaliar_movimentos(dados, auditoria)
 
     if auditoria.empty:
         print("\nNenhuma rejeicao encontrada.")
