@@ -636,6 +636,93 @@ def calcular_projecoes_atr(
 # ANÁLISE COMPLETA DE UMA DATA
 # ============================================================
 
+
+def estimar_pregoes_historicos(dados, tendencia, alvo, n_movimentos=3):
+    """
+    Estima pregões até o alvo usando amplitude e duração
+    dos últimos três movimentos históricos concluídos.
+    """
+
+    if tendencia not in ("ALTA", "BAIXA"):
+        return None
+
+    if alvo is None or pd.isna(alvo):
+        return None
+
+    dados = dados.reset_index(drop=True).copy()
+
+    if len(dados) < 20:
+        return None
+
+    if tendencia == "ALTA":
+        condicao = dados["Fechamento"] > dados["MME21"]
+    else:
+        condicao = dados["Fechamento"] < dados["MME21"]
+
+    # Identificar movimentos concluídos.
+    ondas = []
+    inicio = None
+
+    for i, ativo_na_onda in enumerate(condicao.tolist()):
+        if ativo_na_onda and inicio is None:
+            inicio = i
+        elif not ativo_na_onda and inicio is not None:
+            ondas.append((inicio, i - 1))
+            inicio = None
+
+    # Não incluir uma onda que continua ativa no último pregão.
+    ondas_validas = []
+
+    for inicio_onda, fim_onda in ondas:
+        onda = dados.iloc[inicio_onda:fim_onda + 1]
+
+        if len(onda) < 3:
+            continue
+
+        if tendencia == "ALTA":
+            indice_extremo = onda["Maxima"].idxmax()
+            amplitude = (
+                onda["Maxima"].max()
+                - onda["Fechamento"].iloc[0]
+            )
+        else:
+            indice_extremo = onda["Minima"].idxmin()
+            amplitude = (
+                onda["Fechamento"].iloc[0]
+                - onda["Minima"].min()
+            )
+
+        duracao = indice_extremo - inicio_onda + 1
+
+        if amplitude > 0 and duracao > 0:
+            ondas_validas.append({
+                "amplitude": float(amplitude),
+                "duracao": int(duracao)
+            })
+
+    ultimas = ondas_validas[-n_movimentos:]
+
+    if len(ultimas) < n_movimentos:
+        return None
+
+    amplitude_media = np.mean(
+        [onda["amplitude"] for onda in ultimas]
+    )
+    duracao_media = np.mean(
+        [onda["duracao"] for onda in ultimas]
+    )
+
+    preco_atual = dados["Fechamento"].iloc[-1]
+    distancia = abs(float(alvo) - float(preco_atual))
+
+    if amplitude_media <= 0:
+        return None
+
+    estimativa = distancia / amplitude_media * duracao_media
+
+    return max(1, int(math.ceil(estimativa)))
+
+
 def analisar(dados):
 
     dados = calcular_indicadores(dados)
@@ -705,6 +792,11 @@ def analisar(dados):
         "aceleracao": aceleracao,
         "niveis": niveis,
         "alvo": alvo,
+        "pregoes_estimados_historico": estimar_pregoes_historicos(
+    dados,
+    tendencia,
+    alvo.get("alvo")
+),
         "projecoes": projecoes
     }
 
