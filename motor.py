@@ -764,7 +764,7 @@ def analisar(dados):
         atr
     )
 
-       volume_medio = linha["VolumeMedia20"]
+    volume_medio = linha["VolumeMedia20"]
 
     if (
         pd.notna(linha["Volume"])
