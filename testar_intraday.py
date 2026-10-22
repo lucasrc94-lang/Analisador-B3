@@ -289,6 +289,14 @@ def testar():
 
         print("\nSinais confirmados registrados pelo motor:")
         print(dados["Sinal"].value_counts().to_string())
+        print("\n" + "=" * 80)
+        print("AVALIACAO DOS MOVIMENTOS APOS A ENTRADA")
+        print("=" * 80)
+
+        if movimentos.empty:
+            print("Nenhuma entrada confirmada para avaliar.")
+        else:
+            print(movimentos.round(3).to_string(index=False))
 
     print("\nAuditoria concluida!")
 
