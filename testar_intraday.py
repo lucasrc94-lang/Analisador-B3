@@ -136,10 +136,10 @@ def auditar_sinais(dados):
             "Data_confirmacao": data_confirmacao,
             "Fechamento_entrada": fechamento_entrada,
             "Candles_ate_confirmacao": candles_ate,
-            "MME21_subindo",
-            "MME21_caindo",
-            "MME200_subindo",
-            "MME200_caindo",
+            "MME21_subindo": linha["MME21_subindo"],
+            "MME21_caindo": linha["MME21_caindo"],
+            "MME200_subindo": linha["MME200_subindo"],
+            "MME200_caindo": linha["MME200_caindo"],
         })
 
     return pd.DataFrame(linhas)
