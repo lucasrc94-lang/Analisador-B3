@@ -198,4 +198,4 @@ dados["Tendencia"] = np.select(
     default="LATERAL"
 )
 
-    return dados
+return dados
