@@ -1,6 +1,6 @@
 {
-  "gerado_em_utc": "2026-10-22T12:27:12.108887+00:00",
-  "gerado_em_brasilia": "2026-10-22T09:27:12.108900-03:00",
+  "gerado_em_utc": "2026-10-22T12:51:31.583420+00:00",
+  "gerado_em_brasilia": "2026-10-22T09:51:31.583433-03:00",
   "fonte": "Yahoo Finance chart API; dados diários, sujeitos a atraso/indisponibilidade",
   "ativos_configurados": [
     "B3SA3",
@@ -49,7 +49,44 @@
       "alvo_tecnico": 24.070000000000004,
       "distancia_alvo": 0.5600000000000023,
       "distancia_alvo_atr": 0.4827586206896571,
-      "pregoes_estimados": 6,
+      "alvo_amplitude_historica": 23.990000000000002,
+      "alvo_percentual_historico": 24.22660544525383,
+      "media_amplitude_historica": 0.47999999999999926,
+      "media_amplitude_pct_historica": 3.0480878147759642,
+      "tempo_medio_movimento": 6.666666666666667,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.120000000000001,
+          "amplitude_pct": 0.629260618772947,
+          "duracao": 2,
+          "movimento": "Alta #1",
+          "inicio": "2026-04-22",
+          "data_extremo": "2026-04-23",
+          "preco_inicial": 19.07,
+          "preco_extremo": 19.19
+        },
+        {
+          "amplitude": 0.7999999999999989,
+          "amplitude_pct": 5.1880674448767765,
+          "duracao": 13,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-10",
+          "data_extremo": "2026-07-28",
+          "preco_inicial": 15.42,
+          "preco_extremo": 16.22
+        },
+        {
+          "amplitude": 0.5199999999999978,
+          "amplitude_pct": 3.3269353806781683,
+          "duracao": 5,
+          "movimento": "Alta #3",
+          "inicio": "2026-07-30",
+          "data_extremo": "2026-08-05",
+          "preco_inicial": 15.63,
+          "preco_extremo": 16.15
+        }
+      ],
+      "pregoes_estimados": 8,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 24.67,
       "projecao_atr2": 25.830000000000002,
@@ -79,6 +116,43 @@
       "alvo_tecnico": 59.55821428571429,
       "distancia_alvo": 1.8082142857142927,
       "distancia_alvo_atr": 0.9943047918303258,
+      "alvo_amplitude_historica": 60.78666666666667,
+      "alvo_percentual_historico": 61.90548975054989,
+      "media_amplitude_historica": 3.036666666666669,
+      "media_amplitude_pct_historica": 7.195653247705427,
+      "tempo_medio_movimento": 9.0,
+      "movimentos_historicos": [
+        {
+          "amplitude": 2.480000000000004,
+          "amplitude_pct": 5.235381042854136,
+          "duracao": 5,
+          "movimento": "Alta #1",
+          "inicio": "2026-04-27",
+          "data_extremo": "2026-05-04",
+          "preco_inicial": 47.37,
+          "preco_extremo": 49.85
+        },
+        {
+          "amplitude": 3.8999999999999986,
+          "amplitude_pct": 9.836065573770489,
+          "duracao": 16,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-10",
+          "data_extremo": "2026-07-31",
+          "preco_inicial": 39.65,
+          "preco_extremo": 43.55
+        },
+        {
+          "amplitude": 2.730000000000004,
+          "amplitude_pct": 6.515513126491657,
+          "duracao": 6,
+          "movimento": "Alta #3",
+          "inicio": "2026-08-13",
+          "data_extremo": "2026-08-20",
+          "preco_inicial": 41.9,
+          "preco_extremo": 44.63
+        }
+      ],
       "pregoes_estimados": 6,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 59.56857142857143,
@@ -109,6 +183,43 @@
       "alvo_tecnico": null,
       "distancia_alvo": null,
       "distancia_alvo_atr": null,
+      "alvo_amplitude_historica": 59.88999999999999,
+      "alvo_percentual_historico": 60.62501015514656,
+      "media_amplitude_historica": 4.140000000000005,
+      "media_amplitude_pct_historica": 5.3178039119997536,
+      "tempo_medio_movimento": 9.333333333333334,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.9000000000000057,
+          "amplitude_pct": 1.1281022812735093,
+          "duracao": 2,
+          "movimento": "Baixa #1",
+          "inicio": "2026-06-17",
+          "data_extremo": "2026-06-18",
+          "preco_inicial": 79.78,
+          "preco_extremo": 78.88
+        },
+        {
+          "amplitude": 7.810000000000002,
+          "amplitude_pct": 9.838750314940794,
+          "duracao": 21,
+          "movimento": "Baixa #2",
+          "inicio": "2026-06-23",
+          "data_extremo": "2026-07-21",
+          "preco_inicial": 79.38,
+          "preco_extremo": 71.57
+        },
+        {
+          "amplitude": 3.710000000000008,
+          "amplitude_pct": 4.986559139784957,
+          "duracao": 5,
+          "movimento": "Baixa #3",
+          "inicio": "2026-08-11",
+          "data_extremo": "2026-08-17",
+          "preco_inicial": 74.4,
+          "preco_extremo": 70.69
+        }
+      ],
       "pregoes_estimados": null,
       "tipo_alvo": "SEM ALVO",
       "projecao_atr1": 62.230714285714285,
@@ -139,6 +250,43 @@
       "alvo_tecnico": 49.91303571428573,
       "distancia_alvo": 1.013035714285735,
       "distancia_alvo_atr": 0.5936584344914309,
+      "alvo_amplitude_historica": 50.65,
+      "alvo_percentual_historico": 51.00994592760405,
+      "media_amplitude_historica": 1.7499999999999976,
+      "media_amplitude_pct_historica": 4.314817847861042,
+      "tempo_medio_movimento": 7.333333333333333,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.6799999999999997,
+          "amplitude_pct": 1.6075650118203306,
+          "duracao": 3,
+          "movimento": "Alta #1",
+          "inicio": "2026-07-20",
+          "data_extremo": "2026-07-22",
+          "preco_inicial": 42.3,
+          "preco_extremo": 42.98
+        },
+        {
+          "amplitude": 0.7299999999999969,
+          "amplitude_pct": 1.7080018717828656,
+          "duracao": 3,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-30",
+          "data_extremo": "2026-08-03",
+          "preco_inicial": 42.74,
+          "preco_extremo": 43.47
+        },
+        {
+          "amplitude": 3.8399999999999963,
+          "amplitude_pct": 9.62888665997993,
+          "duracao": 16,
+          "movimento": "Alta #3",
+          "inicio": "2026-09-01",
+          "data_extremo": "2026-09-23",
+          "preco_inicial": 39.88,
+          "preco_extremo": 43.72
+        }
+      ],
       "pregoes_estimados": 5,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 50.60642857142857,
@@ -169,6 +317,43 @@
       "alvo_tecnico": 24.492499999999996,
       "distancia_alvo": 0.39249999999999474,
       "distancia_alvo_atr": 0.4046391752577266,
+      "alvo_amplitude_historica": 25.816666666666666,
+      "alvo_percentual_historico": 26.187298230659934,
+      "media_amplitude_historica": 1.7166666666666661,
+      "media_amplitude_pct_historica": 8.660988508962376,
+      "tempo_medio_movimento": 9.333333333333334,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.25,
+          "amplitude_pct": 1.1973180076628354,
+          "duracao": 2,
+          "movimento": "Alta #1",
+          "inicio": "2026-07-21",
+          "data_extremo": "2026-07-22",
+          "preco_inicial": 20.88,
+          "preco_extremo": 21.13
+        },
+        {
+          "amplitude": 1.0899999999999999,
+          "amplitude_pct": 5.317073170731707,
+          "duracao": 7,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-27",
+          "data_extremo": "2026-08-04",
+          "preco_inicial": 20.5,
+          "preco_extremo": 21.59
+        },
+        {
+          "amplitude": 3.8099999999999987,
+          "amplitude_pct": 19.468574348492584,
+          "duracao": 19,
+          "movimento": "Alta #3",
+          "inicio": "2026-08-25",
+          "data_extremo": "2026-09-21",
+          "preco_inicial": 19.57,
+          "preco_extremo": 23.38
+        }
+      ],
       "pregoes_estimados": 3,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 25.07,
@@ -199,6 +384,43 @@
       "alvo_tecnico": 20.864642857142844,
       "distancia_alvo": 0.21464285714284514,
       "distancia_alvo_atr": 0.24175382139982574,
+      "alvo_amplitude_historica": 21.723333333333333,
+      "alvo_percentual_historico": 21.91476744175015,
+      "media_amplitude_historica": 1.073333333333333,
+      "media_amplitude_pct_historica": 6.1247818002428644,
+      "tempo_medio_movimento": 12.333333333333334,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.509999999999998,
+          "amplitude_pct": 2.8459821428571312,
+          "duracao": 5,
+          "movimento": "Alta #1",
+          "inicio": "2026-06-26",
+          "data_extremo": "2026-07-02",
+          "preco_inicial": 17.92,
+          "preco_extremo": 18.43
+        },
+        {
+          "amplitude": 1.129999999999999,
+          "amplitude_pct": 6.277777777777772,
+          "duracao": 14,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-09",
+          "data_extremo": "2026-07-28",
+          "preco_inicial": 18.0,
+          "preco_extremo": 19.13
+        },
+        {
+          "amplitude": 1.5800000000000018,
+          "amplitude_pct": 9.250585480093688,
+          "duracao": 18,
+          "movimento": "Alta #3",
+          "inicio": "2026-08-28",
+          "data_extremo": "2026-09-23",
+          "preco_inicial": 17.08,
+          "preco_extremo": 18.66
+        }
+      ],
       "pregoes_estimados": 3,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 21.537857142857142,
@@ -229,6 +451,12 @@
       "alvo_tecnico": null,
       "distancia_alvo": null,
       "distancia_alvo_atr": null,
+      "alvo_amplitude_historica": null,
+      "alvo_percentual_historico": null,
+      "media_amplitude_historica": null,
+      "media_amplitude_pct_historica": null,
+      "tempo_medio_movimento": null,
+      "movimentos_historicos": null,
       "pregoes_estimados": null,
       "tipo_alvo": "SEM ALVO",
       "projecao_atr1": null,
@@ -259,6 +487,43 @@
       "alvo_tecnico": 16.74107142857142,
       "distancia_alvo": 0.051071428571418664,
       "distancia_alvo_atr": 0.11439999999997787,
+      "alvo_amplitude_historica": 17.19666666666667,
+      "alvo_percentual_historico": 17.215830271210375,
+      "media_amplitude_historica": 0.5066666666666672,
+      "media_amplitude_pct_historica": 3.1505708281028943,
+      "tempo_medio_movimento": 4.666666666666667,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.6099999999999994,
+          "amplitude_pct": 3.763109191856875,
+          "duracao": 5,
+          "movimento": "Alta #1",
+          "inicio": "2026-06-09",
+          "data_extremo": "2026-06-15",
+          "preco_inicial": 16.21,
+          "preco_extremo": 16.82
+        },
+        {
+          "amplitude": 0.4800000000000004,
+          "amplitude_pct": 2.932193036041542,
+          "duracao": 5,
+          "movimento": "Alta #2",
+          "inicio": "2026-06-23",
+          "data_extremo": "2026-06-29",
+          "preco_inicial": 16.37,
+          "preco_extremo": 16.85
+        },
+        {
+          "amplitude": 0.4300000000000015,
+          "amplitude_pct": 2.756410256410266,
+          "duracao": 4,
+          "movimento": "Alta #3",
+          "inicio": "2026-09-02",
+          "data_extremo": "2026-09-08",
+          "preco_inicial": 15.6,
+          "preco_extremo": 16.03
+        }
+      ],
       "pregoes_estimados": 1,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 17.136428571428574,
@@ -289,6 +554,43 @@
       "alvo_tecnico": null,
       "distancia_alvo": null,
       "distancia_alvo_atr": null,
+      "alvo_amplitude_historica": 74.89333333333333,
+      "alvo_percentual_historico": 75.51335817632528,
+      "media_amplitude_historica": 3.583333333333331,
+      "media_amplitude_pct_historica": 5.894486294103603,
+      "tempo_medio_movimento": 9.0,
+      "movimentos_historicos": [
+        {
+          "amplitude": 2.6700000000000017,
+          "amplitude_pct": 4.571135079609659,
+          "duracao": 3,
+          "movimento": "Alta #1",
+          "inicio": "2026-07-29",
+          "data_extremo": "2026-07-31",
+          "preco_inicial": 58.41,
+          "preco_extremo": 61.08
+        },
+        {
+          "amplitude": 3.999999999999993,
+          "amplitude_pct": 6.5316786414108305,
+          "duracao": 18,
+          "movimento": "Alta #2",
+          "inicio": "2026-08-10",
+          "data_extremo": "2026-09-02",
+          "preco_inicial": 61.24,
+          "preco_extremo": 65.24
+        },
+        {
+          "amplitude": 4.079999999999998,
+          "amplitude_pct": 6.58064516129032,
+          "duracao": 6,
+          "movimento": "Alta #3",
+          "inicio": "2026-09-08",
+          "data_extremo": "2026-09-15",
+          "preco_inicial": 62.0,
+          "preco_extremo": 66.08
+        }
+      ],
       "pregoes_estimados": null,
       "tipo_alvo": "SEM ALVO",
       "projecao_atr1": 73.58857142857143,
@@ -319,7 +621,44 @@
       "alvo_tecnico": 54.347142857142856,
       "distancia_alvo": 1.807142857142857,
       "distancia_alvo_atr": 0.5985332387035722,
-      "pregoes_estimados": 4,
+      "alvo_amplitude_historica": 54.343333333333334,
+      "alvo_percentual_historico": 54.83530950196982,
+      "media_amplitude_historica": 1.8033333333333321,
+      "media_amplitude_pct_historica": 4.368689573600727,
+      "tempo_medio_movimento": 2.3333333333333335,
+      "movimentos_historicos": [
+        {
+          "amplitude": 1.509999999999998,
+          "amplitude_pct": 2.990099009900986,
+          "duracao": 1,
+          "movimento": "Alta #1",
+          "inicio": "2026-04-22",
+          "data_extremo": "2026-04-22",
+          "preco_inicial": 50.5,
+          "preco_extremo": 52.01
+        },
+        {
+          "amplitude": 1.7100000000000009,
+          "amplitude_pct": 4.092867400670179,
+          "duracao": 4,
+          "movimento": "Alta #2",
+          "inicio": "2026-06-23",
+          "data_extremo": "2026-06-26",
+          "preco_inicial": 41.78,
+          "preco_extremo": 43.49
+        },
+        {
+          "amplitude": 2.1899999999999977,
+          "amplitude_pct": 6.023102310231017,
+          "duracao": 2,
+          "movimento": "Alta #3",
+          "inicio": "2026-09-02",
+          "data_extremo": "2026-09-03",
+          "preco_inicial": 36.36,
+          "preco_extremo": 38.55
+        }
+      ],
+      "pregoes_estimados": 3,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 55.559285714285714,
       "projecao_atr2": 58.57857142857143,
@@ -349,6 +688,43 @@
       "alvo_tecnico": 5.456249999999999,
       "distancia_alvo": 0.25375000000000103,
       "distancia_alvo_atr": 0.7324742268041268,
+      "alvo_amplitude_historica": 5.12,
+      "alvo_percentual_historico": 5.090438849586431,
+      "media_amplitude_historica": 0.5899999999999999,
+      "media_amplitude_pct_historica": 10.850457975719245,
+      "tempo_medio_movimento": 5.333333333333333,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.09999999999999964,
+          "amplitude_pct": 1.9607843137254832,
+          "duracao": 2,
+          "movimento": "Baixa #1",
+          "inicio": "2026-07-16",
+          "data_extremo": "2026-07-17",
+          "preco_inicial": 5.1,
+          "preco_extremo": 5.0
+        },
+        {
+          "amplitude": 1.0099999999999998,
+          "amplitude_pct": 19.423076923076916,
+          "duracao": 10,
+          "movimento": "Baixa #2",
+          "inicio": "2026-07-29",
+          "data_extremo": "2026-08-11",
+          "preco_inicial": 5.2,
+          "preco_extremo": 4.19
+        },
+        {
+          "amplitude": 0.6600000000000001,
+          "amplitude_pct": 11.167512690355332,
+          "duracao": 4,
+          "movimento": "Baixa #3",
+          "inicio": "2026-09-24",
+          "data_extremo": "2026-09-29",
+          "preco_inicial": 5.91,
+          "preco_extremo": 5.25
+        }
+      ],
       "pregoes_estimados": 3,
       "tipo_alvo": "SUPORTE P&F",
       "projecao_atr1": 5.363571428571428,
@@ -379,6 +755,43 @@
       "alvo_tecnico": 26.98732142857143,
       "distancia_alvo": 0.4673214285714309,
       "distancia_alvo_atr": 0.5238190552441979,
+      "alvo_amplitude_historica": 28.10666666666667,
+      "alvo_percentual_historico": 28.23964711118486,
+      "media_amplitude_historica": 1.5866666666666684,
+      "media_amplitude_pct_historica": 6.484340539912734,
+      "tempo_medio_movimento": 6.666666666666667,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.2900000000000027,
+          "amplitude_pct": 1.1655948553054771,
+          "duracao": 2,
+          "movimento": "Alta #1",
+          "inicio": "2026-08-12",
+          "data_extremo": "2026-08-13",
+          "preco_inicial": 24.88,
+          "preco_extremo": 25.17
+        },
+        {
+          "amplitude": 2.3100000000000023,
+          "amplitude_pct": 9.637046307884866,
+          "duracao": 15,
+          "movimento": "Alta #2",
+          "inicio": "2026-08-27",
+          "data_extremo": "2026-09-17",
+          "preco_inicial": 23.97,
+          "preco_extremo": 26.28
+        },
+        {
+          "amplitude": 2.16,
+          "amplitude_pct": 8.65038045654786,
+          "duracao": 3,
+          "movimento": "Alta #3",
+          "inicio": "2026-10-01",
+          "data_extremo": "2026-10-05",
+          "preco_inicial": 24.97,
+          "preco_extremo": 27.13
+        }
+      ],
       "pregoes_estimados": 2,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 27.412142857142857,
@@ -409,6 +822,43 @@
       "alvo_tecnico": 12.221428571428577,
       "distancia_alvo": 0.27142857142857757,
       "distancia_alvo_atr": 0.655172413793118,
+      "alvo_amplitude_historica": 12.759999999999998,
+      "alvo_percentual_historico": 12.840852681792349,
+      "media_amplitude_historica": 0.8099999999999993,
+      "media_amplitude_pct_historica": 7.454834157258165,
+      "tempo_medio_movimento": 6.666666666666667,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.21999999999999886,
+          "amplitude_pct": 2.0036429872495343,
+          "duracao": 5,
+          "movimento": "Alta #1",
+          "inicio": "2026-08-12",
+          "data_extremo": "2026-08-18",
+          "preco_inicial": 10.98,
+          "preco_extremo": 11.2
+        },
+        {
+          "amplitude": 1.2199999999999989,
+          "amplitude_pct": 11.553030303030292,
+          "duracao": 12,
+          "movimento": "Alta #2",
+          "inicio": "2026-09-01",
+          "data_extremo": "2026-09-17",
+          "preco_inicial": 10.56,
+          "preco_extremo": 11.78
+        },
+        {
+          "amplitude": 0.9900000000000002,
+          "amplitude_pct": 8.807829181494665,
+          "duracao": 3,
+          "movimento": "Alta #3",
+          "inicio": "2026-10-01",
+          "data_extremo": "2026-10-05",
+          "preco_inicial": 11.24,
+          "preco_extremo": 12.23
+        }
+      ],
       "pregoes_estimados": 3,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 12.364285714285714,
@@ -439,6 +889,43 @@
       "alvo_tecnico": 3.8475000000000006,
       "distancia_alvo": 0.20249999999999924,
       "distancia_alvo_atr": 0.7105263157894709,
+      "alvo_amplitude_historica": 1.279999999999999,
+      "alvo_percentual_historico": 2.8149525455234365,
+      "media_amplitude_historica": 2.770000000000001,
+      "media_amplitude_pct_historica": 30.49499887596453,
+      "tempo_medio_movimento": 25.0,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.4900000000000002,
+          "amplitude_pct": 5.710955710955713,
+          "duracao": 2,
+          "movimento": "Baixa #1",
+          "inicio": "2026-04-22",
+          "data_extremo": "2026-04-23",
+          "preco_inicial": 8.58,
+          "preco_extremo": 8.09
+        },
+        {
+          "amplitude": 6.940000000000001,
+          "amplitude_pct": 66.34799235181646,
+          "duracao": 63,
+          "movimento": "Baixa #2",
+          "inicio": "2026-05-29",
+          "data_extremo": "2026-08-26",
+          "preco_inicial": 10.46,
+          "preco_extremo": 3.52
+        },
+        {
+          "amplitude": 0.8800000000000003,
+          "amplitude_pct": 19.42604856512142,
+          "duracao": 10,
+          "movimento": "Baixa #3",
+          "inicio": "2026-09-16",
+          "data_extremo": "2026-09-29",
+          "preco_inicial": 4.53,
+          "preco_extremo": 3.65
+        }
+      ],
       "pregoes_estimados": 2,
       "tipo_alvo": "SUPORTE P&F",
       "projecao_atr1": 3.7649999999999997,
@@ -469,6 +956,43 @@
       "alvo_tecnico": 3.1935714285714303,
       "distancia_alvo": 0.17357142857143026,
       "distancia_alvo_atr": 0.9239543726235827,
+      "alvo_amplitude_historica": 3.1766666666666667,
+      "alvo_percentual_historico": 3.2340062840385424,
+      "media_amplitude_historica": 0.15666666666666673,
+      "media_amplitude_pct_historica": 7.086300795978218,
+      "tempo_medio_movimento": 5.0,
+      "movimentos_historicos": [
+        {
+          "amplitude": 0.040000000000000036,
+          "amplitude_pct": 1.6666666666666683,
+          "duracao": 2,
+          "movimento": "Alta #1",
+          "inicio": "2026-07-10",
+          "data_extremo": "2026-07-13",
+          "preco_inicial": 2.4,
+          "preco_extremo": 2.44
+        },
+        {
+          "amplitude": 0.08000000000000007,
+          "amplitude_pct": 3.463203463203466,
+          "duracao": 3,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-30",
+          "data_extremo": "2026-08-03",
+          "preco_inicial": 2.31,
+          "preco_extremo": 2.39
+        },
+        {
+          "amplitude": 0.3500000000000001,
+          "amplitude_pct": 16.12903225806452,
+          "duracao": 10,
+          "movimento": "Alta #3",
+          "inicio": "2026-08-25",
+          "data_extremo": "2026-09-08",
+          "preco_inicial": 2.17,
+          "preco_extremo": 2.52
+        }
+      ],
       "pregoes_estimados": 6,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 3.2078571428571427,
@@ -499,6 +1023,43 @@
       "alvo_tecnico": 28.1094642857143,
       "distancia_alvo": 0.02053571428569967,
       "distancia_alvo_atr": 0.025021758050460856,
+      "alvo_amplitude_historica": 25.546666666666667,
+      "alvo_percentual_historico": 25.658090721281315,
+      "media_amplitude_historica": 2.5833333333333335,
+      "media_amplitude_pct_historica": 8.787448555700967,
+      "tempo_medio_movimento": 19.333333333333332,
+      "movimentos_historicos": [
+        {
+          "amplitude": 4.109999999999999,
+          "amplitude_pct": 13.649950182663565,
+          "duracao": 46,
+          "movimento": "Baixa #1",
+          "inicio": "2026-04-22",
+          "data_extremo": "2026-06-26",
+          "preco_inicial": 30.11,
+          "preco_extremo": 26.0
+        },
+        {
+          "amplitude": 1.240000000000002,
+          "amplitude_pct": 4.6424560089854054,
+          "duracao": 3,
+          "movimento": "Baixa #2",
+          "inicio": "2026-07-06",
+          "data_extremo": "2026-07-08",
+          "preco_inicial": 26.71,
+          "preco_extremo": 25.47
+        },
+        {
+          "amplitude": 2.3999999999999986,
+          "amplitude_pct": 8.06993947545393,
+          "duracao": 9,
+          "movimento": "Baixa #3",
+          "inicio": "2026-09-22",
+          "data_extremo": "2026-10-02",
+          "preco_inicial": 29.74,
+          "preco_extremo": 27.34
+        }
+      ],
       "pregoes_estimados": 1,
       "tipo_alvo": "SUPORTE P&F",
       "projecao_atr1": 27.309285714285714,
@@ -529,6 +1090,43 @@
       "alvo_tecnico": 18.09482142857142,
       "distancia_alvo": 0.6948214285714229,
       "distancia_alvo_atr": 0.7775779376498742,
+      "alvo_amplitude_historica": 19.126666666666665,
+      "alvo_percentual_historico": 19.79164938854444,
+      "media_amplitude_historica": 1.7266666666666666,
+      "media_amplitude_pct_historica": 13.74511142841632,
+      "tempo_medio_movimento": 7.0,
+      "movimentos_historicos": [
+        {
+          "amplitude": 1.0599999999999987,
+          "amplitude_pct": 8.439490445859862,
+          "duracao": 5,
+          "movimento": "Alta #1",
+          "inicio": "2026-06-09",
+          "data_extremo": "2026-06-15",
+          "preco_inicial": 12.56,
+          "preco_extremo": 13.62
+        },
+        {
+          "amplitude": 1.7599999999999998,
+          "amplitude_pct": 14.343928280358597,
+          "duracao": 6,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-31",
+          "data_extremo": "2026-08-07",
+          "preco_inicial": 12.27,
+          "preco_extremo": 14.03
+        },
+        {
+          "amplitude": 2.360000000000001,
+          "amplitude_pct": 18.451915559030503,
+          "duracao": 10,
+          "movimento": "Alta #3",
+          "inicio": "2026-08-19",
+          "data_extremo": "2026-09-01",
+          "preco_inicial": 12.79,
+          "preco_extremo": 15.15
+        }
+      ],
       "pregoes_estimados": 3,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 18.293571428571425,
@@ -559,6 +1157,33 @@
       "alvo_tecnico": 16.01196428571428,
       "distancia_alvo": 0.3019642857142806,
       "distancia_alvo_atr": 0.5799039780521165,
+      "alvo_amplitude_historica": 16.43,
+      "alvo_percentual_historico": 16.576137077294685,
+      "media_amplitude_historica": 0.7199999999999998,
+      "media_amplitude_pct_historica": 5.513285024154587,
+      "tempo_medio_movimento": 9.5,
+      "movimentos_historicos": [
+        {
+          "amplitude": 1.2599999999999998,
+          "amplitude_pct": 9.72222222222222,
+          "duracao": 16,
+          "movimento": "Alta #1",
+          "inicio": "2026-06-22",
+          "data_extremo": "2026-07-13",
+          "preco_inicial": 12.96,
+          "preco_extremo": 14.22
+        },
+        {
+          "amplitude": 0.17999999999999972,
+          "amplitude_pct": 1.3043478260869543,
+          "duracao": 3,
+          "movimento": "Alta #2",
+          "inicio": "2026-07-30",
+          "data_extremo": "2026-08-03",
+          "preco_inicial": 13.8,
+          "preco_extremo": 13.98
+        }
+      ],
       "pregoes_estimados": 4,
       "tipo_alvo": "RESISTÊNCIA P&F",
       "projecao_atr1": 16.230714285714285,
