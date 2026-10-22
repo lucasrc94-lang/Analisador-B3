@@ -242,6 +242,72 @@ def avaliar_movimentos(dados, auditoria):
     return pd.DataFrame(resultados)
 
 
+
+def resumir_movimentos(movimentos):
+    """
+    Resume os movimentos em ATR por tipo de operação
+    e por horizonte de 3, 5 e 10 candles.
+    Considera apenas horizontes completos.
+    """
+
+    resultados = []
+
+    if movimentos.empty:
+        return pd.DataFrame()
+
+    for tipo in ["TODAS", "COMPRA", "VENDA"]:
+
+        if tipo == "TODAS":
+            grupo = movimentos.copy()
+        else:
+            grupo = movimentos[
+                movimentos["Tipo"] == tipo
+            ].copy()
+
+        for horizonte in [3, 5, 10]:
+
+            coluna_favoravel = f"Favoravel_ATR_{horizonte}"
+            coluna_contrario = f"Contrario_ATR_{horizonte}"
+            coluna_candles = f"Candles_disponiveis_{horizonte}"
+
+            # Exclui entradas sem horizonte completo.
+            completo = grupo[
+                grupo[coluna_candles] == horizonte
+            ].copy()
+
+            favoraveis = completo[
+                coluna_favoravel
+            ].dropna()
+
+            contrarios = completo[
+                coluna_contrario
+            ].dropna()
+
+            resultados.append({
+                "Tipo": tipo,
+                "Horizonte": horizonte,
+                "Operacoes": len(completo),
+                "Media_favoravel_ATR": (
+                    round(favoraveis.mean(), 3)
+                    if not favoraveis.empty else None
+                ),
+                "Mediana_favoravel_ATR": (
+                    round(favoraveis.median(), 3)
+                    if not favoraveis.empty else None
+                ),
+                "Media_contraria_ATR": (
+                    round(contrarios.mean(), 3)
+                    if not contrarios.empty else None
+                ),
+                "Mediana_contraria_ATR": (
+                    round(contrarios.median(), 3)
+                    if not contrarios.empty else None
+                ),
+            })
+
+    return pd.DataFrame(resultados)
+
+
 def testar():
 
     ativo = "PETR4"
@@ -262,9 +328,9 @@ def testar():
     print(f"Ultimo candle: {dados['Data'].iloc[-1]}")
 
     dados = gerar_sinais_intraday(dados)
-
     auditoria = auditar_sinais(dados)
     movimentos = avaliar_movimentos(dados, auditoria)
+    resumo = resumir_movimentos(movimentos)
 
     if auditoria.empty:
         print("\nNenhuma rejeicao encontrada.")
@@ -313,6 +379,14 @@ def testar():
             print("Nenhuma entrada confirmada para avaliar.")
         else:
             print(movimentos.round(3).to_string(index=False))
+            print("\n" + "=" * 80)
+            print("RESUMO ESTATISTICO DOS MOVIMENTOS EM ATR")
+            print("=" * 80)
+
+            if resumo.empty:
+                print("Nenhum movimento disponível para resumir.")
+            else:
+                print(resumo.to_string(index=False))
 
     print("\nAuditoria concluida!")
 
