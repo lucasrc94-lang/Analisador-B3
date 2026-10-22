@@ -324,7 +324,7 @@ def gerar_sinais_intraday(
     ] = "AGUARDANDO CONFIRMAÇÃO"
 
     # Confirmação somente em candle posterior.
-    for i in range(1, len(dados)):
+    for i in range(2, len(dados)):
 
         # Compra: fechamento cruza a máxima do candle
         # de rejeição, ocorrido um ou dois candles antes.
