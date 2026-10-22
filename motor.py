@@ -663,14 +663,15 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
 
         if tendencia == "ALTA":
             preco_extremo = float(onda["Maxima"].max())
-            indice_extremo = onda["Maxima"].idxmax()
+            posicao_extremo = int(onda["Maxima"].to_numpy().argmax())
             amplitude = preco_extremo - preco_inicial
         else:
             preco_extremo = float(onda["Minima"].min())
-            indice_extremo = onda["Minima"].idxmin()
+            posicao_extremo = int(onda["Minima"].to_numpy().argmin())
             amplitude = preco_inicial - preco_extremo
 
-        duracao = int(indice_extremo - indices[0] + 1)
+        duracao = posicao_extremo + 1
+
 
         if preco_inicial <= 0 or amplitude <= 0 or duracao <= 0:
             continue
@@ -680,7 +681,7 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
         metricas.append({
             "amplitude": amplitude,
             "amplitude_pct": amplitude_pct,
-            "duracao": duracao
+            "duracao": duracao,
             "movimento": f"{tendencia.title()} #{numero}",
             "inicio": pd.to_datetime(
                 onda["Data"].iloc[0]
@@ -719,7 +720,7 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
         "media_amplitude_pct_historica": media_amplitude_pct,
         "tempo_medio_movimento": media_duracao,
         "alvo_amplitude_historica": float(alvo_rs),
-        "alvo_percentual_historico": float(alvo_pct)
+        "alvo_percentual_historico": float(alvo_pct),
         "movimentos_historicos": metricas,
     }
 
