@@ -177,20 +177,45 @@ def gerar_sinais_intraday(
         adjust=False
     ).mean()
 
+    
+    # Inclinação das médias comparada com 3 candles atrás.
+    dados["MME21_subindo"] = (
+        dados["MME21"] > dados["MME21"].shift(3)
+    )
+
+    dados["MME21_caindo"] = (
+        dados["MME21"] < dados["MME21"].shift(3)
+    )
+
+    dados["MME200_subindo"] = (
+        dados["MME200"] > dados["MME200"].shift(3)
+    )
+
+    dados["MME200_caindo"] = (
+        dados["MME200"] < dados["MME200"].shift(3)
+    )
+
+    # Tendência exige alinhamento e inclinação das duas médias.
+    compra_tendencia = (
+        (dados["MME21"] > dados["MME200"])
+        & dados["MME21_subindo"]
+        & dados["MME200_subindo"]
+        & (dados["Fechamento"] > dados["MME21"])
+    )
+
+    venda_tendencia = (
+        (dados["MME21"] < dados["MME200"])
+        & dados["MME21_caindo"]
+        & dados["MME200_caindo"]
+        & (dados["Fechamento"] < dados["MME21"])
+    )
+
     dados["Tendencia"] = np.select(
-        [
-            (
-                (dados["MME21"] > dados["MME200"])
-                & (dados["Fechamento"] > dados["MME21"])
-            ),
-            (
-                (dados["MME21"] < dados["MME200"])
-                & (dados["Fechamento"] < dados["MME21"])
-            )
-        ],
+        [compra_tendencia, venda_tendencia],
         ["ALTA", "BAIXA"],
         default="LATERAL"
     )
+
 
     # --------------------------------------------------
     # 2. ATR DE 14 CANDLES
