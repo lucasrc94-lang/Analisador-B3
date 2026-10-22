@@ -275,7 +275,7 @@ async function carregar() {
   status.className = "";
 
   try {
-    const resposta = await fetch("./dados/analisa.json?atualizacao=" + Date.now());
+    const resposta = await fetch("./dados/analises.json?atualizacao=" + Date.now());
     if (!resposta.ok) throw new Error("HTTP " + resposta.status);
 
     const json = await resposta.json();
