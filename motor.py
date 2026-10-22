@@ -563,6 +563,55 @@ def calcular_alvo_tecnico(
         "tipo": "SEM ALVO"
     }
 
+def classificar_situacao_preco(preco, atr, niveis):
+    suporte = niveis.get("suporte", np.nan)
+    resistencia = niveis.get("resistencia", np.nan)
+
+    if pd.isna(preco) or pd.isna(atr) or atr <= 0:
+        return {
+            "situacao_preco": "INDEFINIDA",
+            "distancia_suporte_atr": np.nan,
+            "distancia_resistencia_atr": np.nan
+        }
+
+    distancia_suporte = (
+        (preco - suporte) / atr
+        if pd.notna(suporte) else np.nan
+    )
+
+    distancia_resistencia = (
+        (resistencia - preco) / atr
+        if pd.notna(resistencia) else np.nan
+    )
+
+    limite = 0.5
+
+    perto_suporte = (
+        pd.notna(distancia_suporte)
+        and 0 <= distancia_suporte <= limite
+    )
+
+    perto_resistencia = (
+        pd.notna(distancia_resistencia)
+        and 0 <= distancia_resistencia <= limite
+    )
+
+    if perto_suporte and perto_resistencia:
+        situacao = "PRÓXIMO DE SUPORTE E RESISTÊNCIA"
+    elif perto_suporte:
+        situacao = "PRÓXIMO DO SUPORTE"
+    elif perto_resistencia:
+        situacao = "PRÓXIMO DA RESISTÊNCIA"
+    elif pd.notna(suporte) or pd.notna(resistencia):
+        situacao = "ENTRE OS NÍVEIS"
+    else:
+        situacao = "SEM NÍVEIS IDENTIFICADOS"
+
+    return {
+        "situacao_preco": situacao,
+        "distancia_suporte_atr": distancia_suporte,
+        "distancia_resistencia_atr": distancia_resistencia
+    }
 
 # ============================================================
 # PROJEÇÕES ATR
@@ -730,14 +779,18 @@ def estimar_pregoes_historicos(dados, tendencia, alvo=None, n_movimentos=3):
         "movimentos_historicos": metricas,
     }
 
-    # Estimativa proporcional até o alvo técnico, caso exista.
-    if alvo is not None and not pd.isna(alvo) and media_amplitude > 0:
-        distancia = abs(float(alvo) - preco_atual)
-        resultado["pregoes_estimados_historico"] = max(
-            1, int(math.ceil(distancia / media_amplitude * media_duracao))
-        )
-    else:
-        resultado["pregoes_estimados_historico"] = None
+    # Estimar os pregões até o alvo baseado na amplitude histórica.
+if media_amplitude > 0 and media_duracao > 0:
+    distancia = abs(alvo_rs - preco_atual)
+
+    resultado["pregoes_estimados_historico"] = max(
+        1,
+        int(math.ceil(
+            distancia / media_amplitude * media_duracao
+        ))
+    )
+else:
+    resultado["pregoes_estimados_historico"] = None
 
     return resultado
 
@@ -778,6 +831,12 @@ def analisar(dados):
         niveis
     )
 
+    situacao_preco = classificar_situacao_preco(
+    preco,
+    atr,
+    niveis
+    )
+
     projecoes = calcular_projecoes_atr(
         tendencia,
         preco,
@@ -798,11 +857,10 @@ def analisar(dados):
     else:
         volume_relativo = np.nan
 
-    # Calcular o histórico ANTES do return.
+    # Calcular o histórico dos movimentos dos últimos seis meses.
     historico = estimar_pregoes_historicos(
         dados,
-        tendencia,
-        alvo.get("alvo") if isinstance(alvo, dict) else None
+        tendencia
     )
 
     return {
@@ -819,6 +877,7 @@ def analisar(dados):
         "tendencia": tendencia,
         "aceleracao": aceleracao,
         "niveis": niveis,
+        "situacao_preco": situacao_preco,
         "alvo": alvo,
         "projecao_historica": historico,
         "pregoes_estimados_historico": (
