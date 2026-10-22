@@ -140,6 +140,18 @@ def simplificar(resultado: dict, ativo: str) -> dict:
         "suporte_pnf": niveis.get("suporte"),
         "resistencia_pnf": niveis.get("resistencia"),
         
+        "situacao_preco": (
+            resultado.get("situacao_preco") or {}
+        ).get("situacao_preco"),
+
+        "distancia_suporte_atr": (
+            resultado.get("situacao_preco") or {}
+        ).get("distancia_suporte_atr"),
+
+        "distancia_resistencia_atr": (
+            resultado.get("situacao_preco") or {}
+        ).get("distancia_resistencia_atr"),
+        
         "alvo_tecnico": alvo.get("alvo"),
         "distancia_alvo": alvo.get("distancia"),
         "distancia_alvo_atr": alvo.get("distancia_atr"),
