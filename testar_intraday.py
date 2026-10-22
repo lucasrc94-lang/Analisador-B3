@@ -246,16 +246,32 @@ def calcular_historico_movimento(dados, indice_entrada, tipo):
     }
 
 
-def avaliar_movimentos(dados, auditoria):
-    """
-    Mede o movimento favorável e contrário após cada entrada
-    confirmada, nos horizontes de 3, 5 e 10 candles.
 
-    Compara os resultados com a amplitude e o percentual
-    históricos das ondas concluídas nos 6 meses anteriores.
+def avaliar_alvos_por_pregoes(dados, auditoria):
+    """
+    Verifica se os alvos históricos de amplitude e percentual
+    foram atingidos em 5, 10, 15 ou 20 pregões futuros.
+
+    Não utiliza stop.
+    A entrada e os alvos são preservados conforme a metodologia atual.
+    O dia da entrada conta como 0 pregões decorridos.
     """
 
-    dados = dados.reset_index(drop=True).copy()
+    dados = (
+        dados.sort_values("Data")
+        .reset_index(drop=True)
+        .copy()
+    )
+
+    # Cada data representa um pregão da Bolsa.
+    datas = dados["Data"].dt.date
+    datas_unicas = list(pd.unique(datas))
+    ordem_pregoes = {
+        data: posicao
+        for posicao, data in enumerate(datas_unicas)
+    }
+
+    prazos = [5, 10, 15, 20]
     resultados = []
 
     confirmadas = auditoria[
@@ -279,154 +295,229 @@ def avaliar_movimentos(dados, auditoria):
             dados.loc[indice_entrada, "Fechamento"]
         )
 
+        data_pregao_entrada = datas.iloc[indice_entrada]
+        ordem_entrada = ordem_pregoes[data_pregao_entrada]
+
         historico = calcular_historico_movimento(
             dados,
             indice_entrada,
             tipo
         )
 
-        resultado = {
-            "Data_entrada": data_entrada,
-            "Tipo": tipo,
-            "Preco_entrada": preco_entrada
-        }
-
         if historico is None:
-            resultado.update({
-                "Ondas_historicas": 0,
-                "Amplitude_media_historica": None,
-                "Percentual_medio_historico": None,
-                "Duracao_media_historica": None,
-                "Alvo_amplitude_historica": None,
-                "Alvo_percentual_historico": None
-            })
+            alvos = [
+                ("AMPLITUDE", None),
+                ("PERCENTUAL", None)
+            ]
         else:
-            amplitude_media = historico[
-                "Amplitude_media_historica"
-            ]
-            percentual_medio = historico[
-                "Percentual_medio_historico"
-            ]
+            direcao = 1 if tipo == "COMPRA" else -1
 
-            sinal_direcao = 1 if tipo == "COMPRA" else -1
-
-            resultado.update(historico)
-            resultado["Alvo_amplitude_historica"] = (
-                preco_entrada + sinal_direcao * amplitude_media
-            )
-            resultado["Alvo_percentual_historico"] = (
+            alvo_amplitude = (
                 preco_entrada
-                * (1 + sinal_direcao * percentual_medio / 100)
+                + direcao
+                * historico["Amplitude_media_historica"]
             )
 
-        for horizonte in [3, 5, 10]:
-
-            inicio = indice_entrada + 1
-            fim = min(
-                indice_entrada + horizonte,
-                len(dados) - 1
+            alvo_percentual = (
+                preco_entrada
+                * (
+                    1
+                    + direcao
+                    * historico["Percentual_medio_historico"]
+                    / 100
+                )
             )
 
-            if inicio > fim:
-                resultado[f"Favoravel_{horizonte}"] = None
-                resultado[f"Contrario_{horizonte}"] = None
-                resultado[f"Favoravel_pct_{horizonte}"] = None
-                resultado[f"Contrario_pct_{horizonte}"] = None
-                resultado[f"Candles_disponiveis_{horizonte}"] = 0
-                continue
+            alvos = [
+                ("AMPLITUDE", alvo_amplitude),
+                ("PERCENTUAL", alvo_percentual)
+            ]
 
-            janela = dados.iloc[inicio:fim + 1]
+        # Avalia separadamente cada tipo de alvo.
+        for tipo_alvo, preco_alvo in alvos:
 
-            if tipo == "COMPRA":
-                favoravel = (
-                    janela["Maxima"].max() - preco_entrada
-                )
-                contrario = (
-                    preco_entrada - janela["Minima"].min()
-                )
+            indice_alvo = None
+            pregoes_ate_alvo = None
+
+            if preco_alvo is not None:
+
+                # Começa no candle seguinte à entrada.
+                # Não usa a máxima/mínima do próprio candle de entrada.
+                for k in range(indice_entrada + 1, len(dados)):
+
+                    if tipo == "COMPRA":
+                        atingiu = (
+                            dados.loc[k, "Maxima"] >= preco_alvo
+                        )
+                    else:
+                        atingiu = (
+                            dados.loc[k, "Minima"] <= preco_alvo
+                        )
+
+                    if atingiu:
+                        indice_alvo = k
+                        pregoes_ate_alvo = (
+                            ordem_pregoes[datas.iloc[k]]
+                            - ordem_entrada
+                        )
+                        break
+
+            if indice_alvo is not None:
+                data_alvo = dados.loc[indice_alvo, "Data"]
+                candles_ate_alvo = indice_alvo - indice_entrada
             else:
-                favoravel = (
-                    preco_entrada - janela["Minima"].min()
-                )
-                contrario = (
-                    janela["Maxima"].max() - preco_entrada
-                )
+                data_alvo = None
+                candles_ate_alvo = None
 
-            resultado[f"Favoravel_{horizonte}"] = round(
-                float(favoravel), 3
-            )
-            resultado[f"Contrario_{horizonte}"] = round(
-                float(contrario), 3
-            )
-            resultado[f"Favoravel_pct_{horizonte}"] = round(
-                float(favoravel / preco_entrada * 100), 3
-            )
-            resultado[f"Contrario_pct_{horizonte}"] = round(
-                float(contrario / preco_entrada * 100), 3
-            )
-            resultado[f"Candles_disponiveis_{horizonte}"] = len(
-                janela
+            # Quantos pregões futuros existem para avaliar este sinal?
+            pregões_futuros_disponiveis = sum(
+                1 for data in datas_unicas
+                if ordem_pregoes[data] > ordem_entrada
             )
 
-        resultados.append(resultado)
+            for prazo in prazos:
+
+                if preco_alvo is None:
+                    status = "SEM ALVO HISTORICO"
+
+                elif indice_alvo is not None:
+                    if pregoes_ate_alvo <= prazo:
+                        status = "ATINGIU DENTRO DO PRAZO"
+                    else:
+                        status = "ATINGIU APOS O PRAZO"
+
+                elif pregões_futuros_disponiveis >= prazo:
+                    status = "NAO ATINGIU ATE O FIM DOS DADOS"
+
+                else:
+                    status = "INCONCLUSIVO - DADOS INSUFICIENTES"
+
+                resultados.append({
+                    "Data_entrada": data_entrada,
+                    "Tipo": tipo,
+                    "Preco_entrada": round(preco_entrada, 3),
+                    "Tipo_alvo": tipo_alvo,
+                    "Preco_alvo": (
+                        round(float(preco_alvo), 3)
+                        if preco_alvo is not None
+                        else None
+                    ),
+                    "Prazo_pregoes": prazo,
+                    "Status_alvo": status,
+                    "Data_alvo": data_alvo,
+                    "Pregoes_ate_alvo": pregoes_ate_alvo,
+                    "Candles_ate_alvo": candles_ate_alvo,
+                    "Pregoes_futuros_disponiveis":
+                        pregões_futuros_disponiveis
+                })
 
     return pd.DataFrame(resultados)
 
 
-def resumir_movimentos(movimentos):
+def resumir_alvos_por_pregoes(alvos):
     """
-    Resume amplitudes favoráveis e contrárias em reais e percentual.
-    Considera somente horizontes com todos os candles disponíveis.
+    Resume os alvos por tipo de operação, tipo de alvo e prazo.
+
+    A taxa de atingimento dentro do prazo usa como denominador
+    apenas os casos com resultado avaliável.
     """
+
+    if alvos.empty:
+        return pd.DataFrame()
 
     resultados = []
 
-    if movimentos.empty:
-        return pd.DataFrame()
+    status_dentro = "ATINGIU DENTRO DO PRAZO"
+    status_depois = "ATINGIU APOS O PRAZO"
+    status_nao_atingiu = "NAO ATINGIU ATE O FIM DOS DADOS"
+    status_inconclusivo = "INCONCLUSIVO - DADOS INSUFICIENTES"
+    status_sem_alvo = "SEM ALVO HISTORICO"
 
     for tipo in ["TODAS", "COMPRA", "VENDA"]:
 
         if tipo == "TODAS":
-            grupo = movimentos.copy()
+            grupo_tipo = alvos.copy()
         else:
-            grupo = movimentos[
-                movimentos["Tipo"] == tipo
+            grupo_tipo = alvos[alvos["Tipo"] == tipo].copy()
+
+        for tipo_alvo in ["AMPLITUDE", "PERCENTUAL"]:
+
+            grupo_alvo = grupo_tipo[
+                grupo_tipo["Tipo_alvo"] == tipo_alvo
             ].copy()
 
-        for horizonte in [3, 5, 10]:
+            for prazo in [5, 10, 15, 20]:
 
-            coluna_candles = f"Candles_disponiveis_{horizonte}"
+                grupo = grupo_alvo[
+                    grupo_alvo["Prazo_pregoes"] == prazo
+                ].copy()
 
-            completo = grupo[
-                grupo[coluna_candles] == horizonte
-            ].copy()
+                dentro = grupo[
+                    grupo["Status_alvo"] == status_dentro
+                ]
 
-            linha = {
-                "Tipo": tipo,
-                "Horizonte_candles": horizonte,
-                "Operacoes": len(completo)
-            }
+                depois = grupo[
+                    grupo["Status_alvo"] == status_depois
+                ]
 
-            for nome, coluna in [
-                ("Media_favoravel_R$", f"Favoravel_{horizonte}"),
-                ("Mediana_favoravel_R$", f"Favoravel_{horizonte}"),
-                ("Media_contraria_R$", f"Contrario_{horizonte}"),
-                ("Mediana_contraria_R$", f"Contrario_{horizonte}"),
-                ("Media_favoravel_pct", f"Favoravel_pct_{horizonte}"),
-                ("Mediana_favoravel_pct", f"Favoravel_pct_{horizonte}"),
-                ("Media_contraria_pct", f"Contrario_pct_{horizonte}"),
-                ("Mediana_contraria_pct", f"Contrario_pct_{horizonte}")
-            ]:
-                valores = completo[coluna].dropna()
+                nao_atingiu = grupo[
+                    grupo["Status_alvo"] == status_nao_atingiu
+                ]
 
-                if valores.empty:
-                    linha[nome] = None
-                elif nome.startswith("Media_"):
-                    linha[nome] = round(float(valores.mean()), 3)
-                else:
-                    linha[nome] = round(float(valores.median()), 3)
+                inconclusivos = grupo[
+                    grupo["Status_alvo"] == status_inconclusivo
+                ]
 
-            resultados.append(linha)
+                sem_alvo = grupo[
+                    grupo["Status_alvo"] == status_sem_alvo
+                ]
+
+                avaliaveis = (
+                    len(dentro)
+                    + len(depois)
+                    + len(nao_atingiu)
+                )
+
+                taxa = (
+                    len(dentro) / avaliaveis * 100
+                    if avaliaveis > 0
+                    else None
+                )
+
+                # Tempo até o alvo entre todos os casos em que
+                # o alvo foi atingido, inclusive depois do prazo.
+                atingidos = grupo[
+                    grupo["Data_alvo"].notna()
+                ]
+
+                mediana_tempo = (
+                    round(
+                        float(
+                            atingidos["Pregoes_ate_alvo"].median()
+                        ),
+                        2
+                    )
+                    if not atingidos.empty
+                    else None
+                )
+
+                resultados.append({
+                    "Tipo": tipo,
+                    "Tipo_alvo": tipo_alvo,
+                    "Prazo_pregoes": prazo,
+                    "Operacoes_avaliaveis": avaliaveis,
+                    "Atingiu_dentro": len(dentro),
+                    "Atingiu_depois": len(depois),
+                    "Nao_atingiu_no_historico": len(nao_atingiu),
+                    "Inconclusivos": len(inconclusivos),
+                    "Sem_alvo_historico": len(sem_alvo),
+                    "Taxa_atingimento_pct": (
+                        round(taxa, 2)
+                        if taxa is not None
+                        else None
+                    ),
+                    "Mediana_pregoes_ate_alvo": mediana_tempo
+                })
 
     return pd.DataFrame(resultados)
 
@@ -453,8 +544,8 @@ def testar():
 
     dados = gerar_sinais_intraday(dados)
     auditoria = auditar_sinais(dados)
-    movimentos = avaliar_movimentos(dados, auditoria)
-    resumo = resumir_movimentos(movimentos)
+    alvos = avaliar_alvos_por_pregoes(dados, auditoria)
+    resumo_alvos = resumir_alvos_por_pregoes(alvos)
 
     if auditoria.empty:
         print("\nNenhuma rejeicao encontrada.")
@@ -495,22 +586,25 @@ def testar():
 
         print("\nSinais confirmados registrados pelo motor:")
         print(dados["Sinal"].value_counts().to_string())
+        
         print("\n" + "=" * 80)
-        print("AVALIACAO DOS MOVIMENTOS APOS A ENTRADA")
+        print("AUDITORIA DOS ALVOS POR PRAZO EM PREGOES")
         print("=" * 80)
 
-        if movimentos.empty:
+        if alvos.empty:
             print("Nenhuma entrada confirmada para avaliar.")
         else:
-            print(movimentos.round(3).to_string(index=False))
+            print(alvos.to_string(index=False))
+
             print("\n" + "=" * 80)
-            print("RESUMO ESTATISTICO — AMPLITUDE E PERCENTUAL")
+            print("RESUMO ESTATISTICO DOS ALVOS")
             print("=" * 80)
 
-            if resumo.empty:
-                print("Nenhum movimento disponível para resumir.")
+            if resumo_alvos.empty:
+                print("Nenhum resultado disponível para resumir.")
             else:
-                print(resumo.to_string(index=False))
+                print(resumo_alvos.to_string(index=False))
+
 
     print("\nAuditoria concluida!")
 
