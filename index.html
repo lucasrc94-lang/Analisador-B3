@@ -334,6 +334,8 @@ async function carregar() {
         (datas.length ? datas[datas.length - 1] : "não informada");
     }
 
+    renderizar();
+
   } catch (erro) {
     status.className = "error";
     status.textContent =
