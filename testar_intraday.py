@@ -247,6 +247,7 @@ def calcular_historico_movimento(dados, indice_entrada, tipo):
 
 
 
+
 def avaliar_alvos_por_pregoes(dados, auditoria):
     """
     Verifica se os alvos históricos de amplitude e percentual
@@ -523,6 +524,115 @@ def resumir_alvos_por_pregoes(alvos):
 
 
 
+def resumir_alvos_por_pregoes(alvos):
+    """
+    Resume os alvos por tipo de operação, tipo de alvo e prazo.
+
+    A taxa de atingimento dentro do prazo usa como denominador
+    apenas os casos com resultado avaliável.
+    """
+
+    if alvos.empty:
+        return pd.DataFrame()
+
+    resultados = []
+
+    status_dentro = "ATINGIU DENTRO DO PRAZO"
+    status_depois = "ATINGIU APOS O PRAZO"
+    status_nao_atingiu = "NAO ATINGIU ATE O FIM DOS DADOS"
+    status_inconclusivo = "INCONCLUSIVO - DADOS INSUFICIENTES"
+    status_sem_alvo = "SEM ALVO HISTORICO"
+
+    for tipo in ["TODAS", "COMPRA", "VENDA"]:
+
+        if tipo == "TODAS":
+            grupo_tipo = alvos.copy()
+        else:
+            grupo_tipo = alvos[alvos["Tipo"] == tipo].copy()
+
+        for tipo_alvo in ["AMPLITUDE", "PERCENTUAL"]:
+
+            grupo_alvo = grupo_tipo[
+                grupo_tipo["Tipo_alvo"] == tipo_alvo
+            ].copy()
+
+            for prazo in [5, 10, 15, 20]:
+
+                grupo = grupo_alvo[
+                    grupo_alvo["Prazo_pregoes"] == prazo
+                ].copy()
+
+                dentro = grupo[
+                    grupo["Status_alvo"] == status_dentro
+                ]
+
+                depois = grupo[
+                    grupo["Status_alvo"] == status_depois
+                ]
+
+                nao_atingiu = grupo[
+                    grupo["Status_alvo"] == status_nao_atingiu
+                ]
+
+                inconclusivos = grupo[
+                    grupo["Status_alvo"] == status_inconclusivo
+                ]
+
+                sem_alvo = grupo[
+                    grupo["Status_alvo"] == status_sem_alvo
+                ]
+
+                avaliaveis = (
+                    len(dentro)
+                    + len(depois)
+                    + len(nao_atingiu)
+                )
+
+                taxa = (
+                    len(dentro) / avaliaveis * 100
+                    if avaliaveis > 0
+                    else None
+                )
+
+                # Tempo até o alvo entre todos os casos em que
+                # o alvo foi atingido, inclusive depois do prazo.
+                atingidos = grupo[
+                    grupo["Data_alvo"].notna()
+                ]
+
+                mediana_tempo = (
+                    round(
+                        float(
+                            atingidos["Pregoes_ate_alvo"].median()
+                        ),
+                        2
+                    )
+                    if not atingidos.empty
+                    else None
+                )
+
+                resultados.append({
+                    "Tipo": tipo,
+                    "Tipo_alvo": tipo_alvo,
+                    "Prazo_pregoes": prazo,
+                    "Operacoes_avaliaveis": avaliaveis,
+                    "Atingiu_dentro": len(dentro),
+                    "Atingiu_depois": len(depois),
+                    "Nao_atingiu_no_historico": len(nao_atingiu),
+                    "Inconclusivos": len(inconclusivos),
+                    "Sem_alvo_historico": len(sem_alvo),
+                    "Taxa_atingimento_pct": (
+                        round(taxa, 2)
+                        if taxa is not None
+                        else None
+                    ),
+                    "Mediana_pregoes_ate_alvo": mediana_tempo
+                })
+
+    return pd.DataFrame(resultados)
+
+
+
 def testar():
 
     ativo = "PETR4"
@@ -586,6 +696,7 @@ def testar():
 
         print("\nSinais confirmados registrados pelo motor:")
         print(dados["Sinal"].value_counts().to_string())
+        
         
         print("\n" + "=" * 80)
         print("AUDITORIA DOS ALVOS POR PRAZO EM PREGOES")
