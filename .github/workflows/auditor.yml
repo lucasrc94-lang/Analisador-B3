@@ -1,29 +1,62 @@
 
-name: Auditor
+name: Auditor do Analisador B3
 
 on:
   workflow_dispatch:
+    inputs:
+      arquivo:
+        description: "Caminho do CSV dentro do repositório"
+        required: true
+        default: "dados/B3SA3.csv"
+      inicio:
+        description: "Data inicial AAAA-MM-DD; deixe vazio para usar o início do histórico"
+        required: false
+        default: ""
+      fim:
+        description: "Data final AAAA-MM-DD; deixe vazio para usar a última data disponível"
+        required: false
+        default: ""
+      horizontes:
+        description: "Horizontes em pregões, separados por vírgula"
+        required: true
+        default: "5,10,15,20"
 
 permissions:
   contents: read
 
 jobs:
-  testar:
+  auditoria:
     runs-on: ubuntu-latest
-
     steps:
       - name: Baixar o repositório
         uses: actions/checkout@v4
 
-      - name: Configurar Python
+      - name: Preparar Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Instalar dependências
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas numpy requests
+        run: python -m pip install --upgrade pip pandas numpy
 
       - name: Executar auditor
-        run: python auditor.py
+        shell: bash
+        env:
+          ARQUIVO: ${{ inputs.arquivo }}
+          INICIO: ${{ inputs.inicio }}
+          FIM: ${{ inputs.fim }}
+          HORIZONTES: ${{ inputs.horizontes }}
+        run: |
+          args=(--arquivo "$ARQUIVO" --horizontes "$HORIZONTES")
+          if [[ -n "$INICIO" ]]; then args+=(--inicio "$INICIO"); fi
+          if [[ -n "$FIM" ]]; then args+=(--fim "$FIM"); fi
+          python auditor.py "${args[@]}"
+
+      - name: Disponibilizar relatórios para baixar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-auditoria-b3
+          path: resultado_auditoria/
+          if-no-files-found: warn
+          retention-days: 14
