@@ -55,7 +55,6 @@ if not resultados:
     st.stop()
 
 ```python
-```python
 col1, col2, col3 = st.columns(3)
 
 col1.metric(
@@ -63,17 +62,15 @@ col1.metric(
     len(resultados)
 )
 
-data_geracao = payload.get("gerado_em_brasilia", "N/D")
+data_geracao = payload.get("gerado_em_brasilia")
 
-try:
-    if data_geracao != "N/D":
-        data_formatada = datetime.fromisoformat(
-            str(data_geracao).replace("Z", "+00:00")
-        ).strftime("%d/%m/%Y às %H:%M")
-    else:
-        data_formatada = "N/D"
-except (ValueError, TypeError):
-    data_formatada = str(data_geracao)
+if data_geracao:
+    data_hora = datetime.fromisoformat(
+        str(data_geracao).replace("Z", "+00:00")
+    )
+    data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M:%S")
+else:
+    data_formatada = "Não disponível"
 
 col2.metric(
     "Última atualização",
@@ -86,9 +83,8 @@ col3.metric(
 )
 
 st.caption(
-    "A atualização indica quando o arquivo de análises foi gerado. "
-    "Como os dados são diários, confira também a data do último pregão "
-    "disponível para cada ativo."
+    "O horário indica quando o arquivo de análises foi gerado, "
+    "no horário de Brasília."
 )
 ```
 df = pd.DataFrame(resultados)
