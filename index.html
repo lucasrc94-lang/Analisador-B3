@@ -303,8 +303,30 @@ async function carregar() {
     document.getElementById("totalLateral").textContent = laterais;
 
     const datas = ativos.map(a => a.data).filter(Boolean).sort();
+
+const dataGeracao = json.gerado_em_brasilia;
+
+if (dataGeracao) {
+    const dataHora = new Date(dataGeracao);
+
     document.getElementById("dataPainel").textContent =
-      "Data dos dados: " + (datas.length ? datas[datas.length - 1] : "não informada");
+        "Última atualização: " +
+        dataHora.toLocaleString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+        }) +
+        " (horário de Brasília)";
+} else {
+    document.getElementById("dataPainel").textContent =
+        "Data dos dados: " +
+        (datas.length ? datas[datas.length - 1] : "não informada");
+}
 
     renderizar();
   } catch (erro) {
