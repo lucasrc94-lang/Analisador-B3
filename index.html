@@ -305,24 +305,38 @@ async function carregar() {
     const datas = ativos.map(a => a.data).filter(Boolean).sort();
 
 const dataGeracao = json.gerado_em_brasilia;
+const elementoHorario = document.getElementById("dataAtualizacao");
 
 if (dataGeracao) {
     const dataHora = new Date(dataGeracao);
 
-    document.getElementById("dataPainel").textContent =
-        "Última atualização: " +
-        dataHora.toLocaleString("pt-BR", {
-            timeZone: "America/Sao_Paulo",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false
-        }) +
+    const horarioFormatado = dataHora.toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+    });
+
+    const textoHorario =
+        "🕒 Última atualização: " + horarioFormatado +
         " (horário de Brasília)";
-} else {
+
+    document.getElementById("dataPainel").textContent = textoHorario;
+    elementoHorario.textContent = textoHorario;
+}  
+  else {
+    const textoHorario =
+        "Data de geração não disponível. Último candle: " +
+        (datas.length ? datas[datas.length - 1] : "não informada");
+
+    document.getElementById("dataPainel").textContent = textoHorario;
+    elementoHorario.textContent = textoHorario;
+}
+  else {
     document.getElementById("dataPainel").textContent =
         "Data dos dados: " +
         (datas.length ? datas[datas.length - 1] : "não informada");
