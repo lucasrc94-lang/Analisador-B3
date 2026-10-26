@@ -1,26 +1,16 @@
+
 """
-AUDITOR DO ANALISADOR B3
-========================
+AUDITOR DAS PROJEÇÕES HISTÓRICAS DO ANALISADOR B3
 
-Audita o motor.py sem modificá-lo.
+Valida os alvos por amplitude histórica e percentual histórico
+calculados por motor.estimar_pregoes_historicos().
 
-O script:
-1. Lê um CSV histórico de um ativo.
-2. Verifica qualidade e consistência dos dados.
-3. Executa o backtest existente do motor para horizontes de 5, 10, 15 e 20 pregões.
-4. Gera arquivos CSV com sinais detalhados, resumo estatístico e problemas de dados.
-
-Uso:
-    python auditor.py --arquivo dados/B3SA3.csv
-    python auditor.py --arquivo dados/B3SA3.csv --inicio 2024-01-01 --fim 2026-10-26
-    python auditor.py --arquivo dados/B3SA3.csv --horizontes 5,10,15,20
-
-O arquivo auditor.py deve ficar na mesma pasta de motor.py.
+Não utiliza alvo P&F nem stop por ATR para avaliar as projeções.
+Não modifica motor.py.
 """
 
 import argparse
 import importlib
-import math
 import sys
 from pathlib import Path
 
@@ -28,71 +18,110 @@ import numpy as np
 import pandas as pd
 
 
-COLUNAS_OBRIGATORIAS = ["Data", "Fechamento", "Maxima", "Minima", "Volume"]
-HORIZONTES_PADRAO = [5, 10, 15, 20]
+COLUNAS_OBRIGATORIAS = [
+    "Data", "Fechamento", "Maxima", "Minima", "Volume"
+]
 
+HORIZONTES_PADRAO = [5, 10, 15, 20]
+JANELA_MAXIMA_OBSERVACAO = 60
+
+
+# ============================================================
+# LEITURA E PREPARAÇÃO DOS DADOS
+# ============================================================
 
 def ler_csv(caminho):
-    """Lê CSV tentando detectar automaticamente o separador."""
     caminho = Path(caminho)
+
     if not caminho.exists():
-        raise FileNotFoundError(f"Arquivo não encontrado: {caminho}")
+        raise FileNotFoundError(
+            f"Arquivo não encontrado: {caminho}"
+        )
 
-    try:
-        dados = pd.read_csv(caminho, sep=None, engine="python")
-    except Exception:
-        dados = pd.read_csv(caminho)
+    dados = pd.read_csv(
+        caminho,
+        sep=None,
+        engine="python"
+    )
 
-    # Remove espaços dos nomes das colunas.
-    dados.columns = [str(c).strip() for c in dados.columns]
+    dados.columns = [
+        str(coluna).strip()
+        for coluna in dados.columns
+    ]
 
-    # Compatibilidade com alguns CSVs que usam nomes alternativos comuns.
     aliases = {
         "Data": ["data", "Date", "date"],
-        "Fechamento": ["fechamento", "Close", "close", "Adj Close"],
+        "Fechamento": [
+            "fechamento", "Close", "close", "Adj Close"
+        ],
         "Maxima": ["maxima", "Máxima", "High", "high"],
         "Minima": ["minima", "Mínima", "Low", "low"],
         "Volume": ["volume", "Volume negociado"],
         "Abertura": ["abertura", "Open", "open"],
     }
+
     renomear = {}
+
     for destino, alternativas in aliases.items():
         if destino not in dados.columns:
             for alternativa in alternativas:
                 if alternativa in dados.columns:
                     renomear[alternativa] = destino
                     break
-    if renomear:
-        dados = dados.rename(columns=renomear)
 
-    faltantes = [c for c in COLUNAS_OBRIGATORIAS if c not in dados.columns]
+    dados = dados.rename(columns=renomear)
+
+    faltantes = [
+        coluna for coluna in COLUNAS_OBRIGATORIAS
+        if coluna not in dados.columns
+    ]
+
     if faltantes:
         raise ValueError(
-            "O CSV não contém as colunas obrigatórias: "
-            + ", ".join(faltantes)
-            + f"\nColunas encontradas: {list(dados.columns)}"
+            f"Colunas obrigatórias ausentes: {faltantes}. "
+            f"Encontradas: {list(dados.columns)}"
         )
 
-    # Datas em formatos brasileiros e ISO.
-    dados["Data"] = pd.to_datetime(dados["Data"], errors="coerce", dayfirst=True)
+    dados["Data"] = pd.to_datetime(
+        dados["Data"],
+        errors="coerce",
+        dayfirst=True
+    )
 
-    for coluna in ["Fechamento", "Maxima", "Minima", "Volume", "Abertura"]:
-        if coluna in dados.columns:
-            # Aceita números com vírgula decimal quando o pandas leu como texto.
-            if dados[coluna].dtype == object:
-                texto = dados[coluna].astype(str).str.strip()
-                texto = texto.str.replace("R$", "", regex=False).str.replace(" ", "", regex=False)
-                # Para strings no formato 1.234,56, remove separador de milhar.
-                texto = texto.str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
-                dados[coluna] = texto
-            dados[coluna] = pd.to_numeric(dados[coluna], errors="coerce")
+    for coluna in [
+        "Fechamento", "Maxima", "Minima",
+        "Volume", "Abertura"
+    ]:
+        if coluna not in dados.columns:
+            continue
 
-    dados = dados.sort_values("Data").reset_index(drop=True)
+        if dados[coluna].dtype == object:
+            texto = dados[coluna].astype(str).str.strip()
+            texto = texto.str.replace("R$", "", regex=False)
+            texto = texto.str.replace(" ", "", regex=False)
+
+            # Compatibilidade com números decimais brasileiros.
+            texto = texto.str.replace(
+                ".", "", regex=False
+            ).str.replace(
+                ",", ".", regex=False
+            )
+
+            dados[coluna] = texto
+
+        dados[coluna] = pd.to_numeric(
+            dados[coluna],
+            errors="coerce"
+        )
+
     return dados
 
 
+# ============================================================
+# AUDITORIA DA QUALIDADE
+# ============================================================
+
 def auditar_qualidade(dados):
-    """Retorna uma tabela de verificações e uma cópia limpa para o motor."""
     verificacoes = []
 
     def registrar(teste, quantidade, gravidade, detalhe):
@@ -104,48 +133,83 @@ def auditar_qualidade(dados):
         })
 
     total = len(dados)
-    registrar("Linhas no CSV", total, "INFO", "Total de registros lidos.")
-    registrar("Datas inválidas", dados["Data"].isna().sum(), "ERRO",
-              "Registros sem data válida serão removidos.")
-    registrar("Datas duplicadas", dados["Data"].duplicated(keep=False).sum(), "ALERTA",
-              "Duplicatas serão resolvidas mantendo o último registro da data.")
-    registrar("Datas fora de ordem no arquivo original", 0, "INFO",
-              "Os dados foram ordenados cronologicamente para a análise.")
 
-    numericas = ["Fechamento", "Maxima", "Minima", "Volume"]
-    for coluna in numericas:
-        qtd = dados[coluna].isna().sum()
-        registrar(f"{coluna} ausente/inválido", qtd, "ERRO" if qtd else "OK",
-                  "Registros com campos obrigatórios inválidos serão removidos.")
+    registrar(
+        "Linhas no CSV", total, "INFO",
+        "Total de registros lidos."
+    )
 
-    if "Abertura" in dados.columns:
-        registrar("Abertura ausente/inválida", dados["Abertura"].isna().sum(), "ALERTA",
-                  "Abertura não é obrigatória para o motor enviado.")
+    registrar(
+        "Datas inválidas",
+        dados["Data"].isna().sum(),
+        "ERRO",
+        "Registros sem data válida serão removidos."
+    )
+
+    registrar(
+        "Datas duplicadas",
+        dados["Data"].duplicated(keep=False).sum(),
+        "ALERTA",
+        "Será mantido o último registro de cada data."
+    )
+
+    for coluna in COLUNAS_OBRIGATORIAS[1:]:
+        quantidade = dados[coluna].isna().sum()
+
+        registrar(
+            f"{coluna} ausente/inválido",
+            quantidade,
+            "ERRO" if quantidade else "OK",
+            "Registros inválidos serão removidos."
+        )
 
     invalidos_precos = (
         (dados["Fechamento"] <= 0)
         | (dados["Maxima"] <= 0)
         | (dados["Minima"] <= 0)
     )
-    registrar("Preços não positivos", invalidos_precos.sum(), "ERRO",
-              "Registros com preços não positivos serão removidos.")
+
+    registrar(
+        "Preços não positivos",
+        invalidos_precos.sum(),
+        "ERRO",
+        "Registros com preços não positivos serão removidos."
+    )
 
     max_menor_min = dados["Maxima"] < dados["Minima"]
-    registrar("Máxima menor que mínima", max_menor_min.sum(), "ERRO",
-              "Inconsistência OHLC; registros serão removidos.")
+
+    registrar(
+        "Máxima menor que mínima",
+        max_menor_min.sum(),
+        "ERRO",
+        "Registros inconsistentes serão removidos."
+    )
 
     fechamento_fora = (
         (dados["Fechamento"] > dados["Maxima"])
         | (dados["Fechamento"] < dados["Minima"])
     )
-    registrar("Fechamento fora da faixa mínima/máxima", fechamento_fora.sum(), "ALERTA",
-              "Pode indicar dados inconsistentes; registros não serão removidos automaticamente.")
 
-    vol_negativo = dados["Volume"] < 0
-    registrar("Volume negativo", vol_negativo.sum(), "ERRO",
-              "Registros com volume negativo serão removidos.")
+    registrar(
+        "Fechamento fora da faixa",
+        fechamento_fora.sum(),
+        "ALERTA",
+        "Esses registros serão preservados para inspeção."
+    )
 
-    limpos = dados.dropna(subset=COLUNAS_OBRIGATORIAS).copy()
+    volume_negativo = dados["Volume"] < 0
+
+    registrar(
+        "Volume negativo",
+        volume_negativo.sum(),
+        "ERRO",
+        "Registros com volume negativo serão removidos."
+    )
+
+    limpos = dados.dropna(
+        subset=COLUNAS_OBRIGATORIAS
+    ).copy()
+
     limpos = limpos[
         (limpos["Fechamento"] > 0)
         & (limpos["Maxima"] > 0)
@@ -153,220 +217,559 @@ def auditar_qualidade(dados):
         & (limpos["Maxima"] >= limpos["Minima"])
         & (limpos["Volume"] >= 0)
     ].copy()
-    limpos = limpos.drop_duplicates(subset=["Data"], keep="last")
-    limpos = limpos.sort_values("Data").reset_index(drop=True)
 
-    registrar("Linhas válidas após limpeza", len(limpos), "INFO",
-              "Registros disponíveis para o motor após remover erros obrigatórios.")
-    registrar("Linhas removidas na limpeza", total - len(limpos), "INFO",
-              "Diferença entre o arquivo original e a base preparada.")
+    limpos = limpos.sort_values("Data")
+    limpos = limpos.drop_duplicates(
+        subset=["Data"],
+        keep="last"
+    )
+    limpos = limpos.reset_index(drop=True)
+
+    registrar(
+        "Linhas válidas após limpeza",
+        len(limpos),
+        "INFO",
+        "Registros disponíveis para a análise."
+    )
+
+    registrar(
+        "Linhas removidas",
+        total - len(limpos),
+        "INFO",
+        "Diferença entre registros originais e registros válidos."
+    )
 
     if not limpos.empty:
-        registrar("Primeira data válida", 1, "INFO", str(limpos["Data"].iloc[0].date()))
-        registrar("Última data válida", 1, "INFO", str(limpos["Data"].iloc[-1].date()))
+        registrar(
+            "Primeira data válida",
+            1,
+            "INFO",
+            str(limpos["Data"].iloc[0].date())
+        )
+
+        registrar(
+            "Última data válida",
+            1,
+            "INFO",
+            str(limpos["Data"].iloc[-1].date())
+        )
 
     return pd.DataFrame(verificacoes), limpos
 
 
-def resumo_backtest(resultados, horizonte):
-    """Produz estatísticas transparentes sem classificar ambiguidades como vitória ou derrota."""
-    total = len(resultados)
-    if total == 0:
-        return {
-            "Horizonte_pregoes": horizonte,
-            "Sinais": 0,
-            "Alvos": 0,
-            "Stops": 0,
-            "Ambiguos": 0,
-            "Nao_atingiu": 0,
-            "Taxa_alvo_sobre_sinais": np.nan,
-            "Taxa_alvo_excluindo_ambiguos": np.nan,
-            "Resultado_R_conhecido": 0,
-            "Resultado_R_acumulado": np.nan,
-            "Media_pregoes_resultado": np.nan,
-            "Mediana_pregoes_resultado": np.nan,
-        }
+# ============================================================
+# VERIFICAR QUANDO UM ALVO FOI ATINGIDO
+# ============================================================
 
-    contagem = resultados["Resultado"].value_counts()
-    alvos = int(contagem.get("ALVO", 0))
-    stops = int(contagem.get("STOP", 0))
-    ambiguos = int(contagem.get("AMBIGUO", 0))
-    nao_atingiu = int(contagem.get("NAO ATINGIU", 0))
+def verificar_alvo(futuro, direcao, alvo):
+    if pd.isna(alvo):
+        return None, None
 
-    resolvidos_sem_ambiguos = alvos + stops
-    taxa_excluindo_ambiguos = (
-        alvos / resolvidos_sem_ambiguos * 100
-        if resolvidos_sem_ambiguos else np.nan
+    for numero, (_, candle) in enumerate(
+        futuro.iterrows(),
+        start=1
+    ):
+        if direcao == "ALTA":
+            atingiu = candle["Maxima"] >= alvo
+        else:
+            atingiu = candle["Minima"] <= alvo
+
+        if atingiu:
+            return numero, candle["Data"]
+
+    return None, None
+
+
+# ============================================================
+# AUDITORIA DAS PROJEÇÕES HISTÓRICAS
+# ============================================================
+
+def auditar_projecoes(
+    motor,
+    dados,
+    inicio,
+    fim,
+    horizontes,
+    ticker
+):
+    resultados = []
+
+    minimo_dados = getattr(
+        motor, "MINIMO_DADOS", 220
     )
 
-    r_conhecido = pd.to_numeric(resultados["Resultado_R"], errors="coerce")
-    preg = pd.to_numeric(resultados["Pregoes_Resultado"], errors="coerce")
+    janela = max(
+        JANELA_MAXIMA_OBSERVACAO,
+        max(horizontes)
+    )
 
-    return {
-        "Horizonte_pregoes": horizonte,
-        "Sinais": total,
-        "Alvos": alvos,
-        "Stops": stops,
-        "Ambiguos": ambiguos,
-        "Nao_atingiu": nao_atingiu,
-        "Taxa_alvo_sobre_sinais": round(alvos / total * 100, 2) if total else np.nan,
-        "Taxa_alvo_excluindo_ambiguos": round(taxa_excluindo_ambiguos, 2)
-            if pd.notna(taxa_excluindo_ambiguos) else np.nan,
-        "Resultado_R_conhecido": int(r_conhecido.notna().sum()),
-        "Resultado_R_acumulado": round(r_conhecido.sum(), 4)
-            if r_conhecido.notna().any() else np.nan,
-        "Media_pregoes_resultado": round(preg.mean(), 2)
-            if preg.notna().any() else np.nan,
-        "Mediana_pregoes_resultado": round(preg.median(), 2)
-            if preg.notna().any() else np.nan,
-    }
+    # Exige uma janela futura completa para comparar os sinais.
+    # Assim, os sinais próximos do fim da série não são tratados
+    # injustamente como alvos não atingidos.
+    ultimo_indice = len(dados) - janela
 
+    if ultimo_indice <= minimo_dados:
+        print(
+            f"{ticker}: histórico insuficiente para "
+            f"{janela} pregões futuros completos."
+        )
+        return resultados
+
+    for indice in range(minimo_dados, ultimo_indice):
+        linha_sinal = dados.iloc[indice]
+        data_sinal = linha_sinal["Data"]
+
+        if data_sinal < inicio or data_sinal > fim:
+            continue
+
+        # Importante: somente dados até a data do sinal.
+        historico = dados.iloc[:indice + 1].copy()
+
+        historico = motor.calcular_indicadores(
+            historico
+        )
+
+        sinal = historico.iloc[-1]
+
+        direcao = motor.classificar_tendencia(
+            sinal
+        )
+
+        if direcao not in ("ALTA", "BAIXA"):
+            continue
+
+        # Esta é a função de projeção histórica do motor.
+        # Não chamar analisar() nem executar_backtest(), pois
+        # essas funções também calculam alvos P&F/ATR.
+        projecao = motor.estimar_pregoes_historicos(
+            historico,
+            direcao
+        )
+
+        if not projecao:
+            continue
+
+        prazo_estimado = projecao.get(
+            "pregoes_estimados_historico"
+        )
+
+        if (
+            prazo_estimado is None
+            or pd.isna(prazo_estimado)
+            or prazo_estimado <= 0
+        ):
+            continue
+
+        prazo_estimado = int(prazo_estimado)
+
+        preco_entrada = float(
+            sinal["Fechamento"]
+        )
+
+        futuro = dados.iloc[
+            indice + 1: indice + 1 + janela
+        ].copy()
+
+        alvos = [
+            (
+                "AMPLITUDE",
+                projecao.get(
+                    "alvo_amplitude_historica"
+                )
+            ),
+            (
+                "PERCENTUAL",
+                projecao.get(
+                    "alvo_percentual_historico"
+                )
+            ),
+        ]
+
+        for tipo_alvo, alvo in alvos:
+            if alvo is None or pd.isna(alvo):
+                continue
+
+            alvo = float(alvo)
+
+            pregoes_reais, data_atingimento = (
+                verificar_alvo(
+                    futuro,
+                    direcao,
+                    alvo
+                )
+            )
+
+            if pregoes_reais is None:
+                status_prazo = (
+                    "NAO ATINGIU NA JANELA"
+                )
+                erro_pregoes = None
+            else:
+                erro_pregoes = (
+                    pregoes_reais - prazo_estimado
+                )
+
+                if pregoes_reais <= prazo_estimado:
+                    status_prazo = "NO PRAZO"
+                else:
+                    status_prazo = "DEPOIS DO PRAZO"
+
+            # Cada horizonte recebe uma avaliação própria.
+            for horizonte in horizontes:
+                atingiu_no_horizonte = (
+                    pregoes_reais is not None
+                    and pregoes_reais <= horizonte
+                )
+
+                resultados.append({
+                    "Ativo": ticker,
+                    "Data_Sinal": data_sinal,
+                    "Direcao": direcao,
+                    "Preco_Entrada": preco_entrada,
+                    "Tipo_Alvo": tipo_alvo,
+                    "Alvo_Projetado": alvo,
+                    "Amplitude_Media_R$": (
+                        projecao.get(
+                            "media_amplitude_historica"
+                        )
+                    ),
+                    "Amplitude_Media_%": (
+                        projecao.get(
+                            "media_amplitude_pct_historica"
+                        )
+                    ),
+                    "Tempo_Medio_Movimento": (
+                        projecao.get(
+                            "tempo_medio_movimento"
+                        )
+                    ),
+                    "Pregoes_Estimados": prazo_estimado,
+                    "Horizonte_Avaliacao": horizonte,
+                    "Atingiu_No_Horizonte": (
+                        atingiu_no_horizonte
+                    ),
+                    "Pregoes_Reais_Ate_Alvo": (
+                        pregoes_reais
+                    ),
+                    "Erro_Pregoes_vs_Estimativa": (
+                        erro_pregoes
+                    ),
+                    "Status_vs_Prazo_Estimado": (
+                        status_prazo
+                    ),
+                    "Data_Atingimento": data_atingimento,
+                })
+
+    return resultados
+
+
+# ============================================================
+# RESUMO ESTATÍSTICO
+# ============================================================
+
+def criar_resumo(detalhado):
+    if detalhado.empty:
+        return pd.DataFrame()
+
+    agrupado = detalhado.groupby(
+        [
+            "Ativo",
+            "Tipo_Alvo",
+            "Direcao",
+            "Horizonte_Avaliacao"
+        ],
+        dropna=False
+    )
+
+    linhas = []
+
+    for chaves, grupo in agrupado:
+        total = len(grupo)
+
+        atingidos = int(
+            grupo["Atingiu_No_Horizonte"].sum()
+        )
+
+        no_prazo = int(
+            (
+                grupo["Status_vs_Prazo_Estimado"]
+                == "NO PRAZO"
+            ).sum()
+        )
+
+        depois = int(
+            (
+                grupo["Status_vs_Prazo_Estimado"]
+                == "DEPOIS DO PRAZO"
+            ).sum()
+        )
+
+        nao_atingidos = int(
+            (
+                grupo["Status_vs_Prazo_Estimado"]
+                == "NAO ATINGIU NA JANELA"
+            ).sum()
+        )
+
+        tempos = pd.to_numeric(
+            grupo["Pregoes_Reais_Ate_Alvo"],
+            errors="coerce"
+        )
+
+        erros = pd.to_numeric(
+            grupo["Erro_Pregoes_vs_Estimativa"],
+            errors="coerce"
+        )
+
+        ativo, tipo_alvo, direcao, horizonte = chaves
+
+        linhas.append({
+            "Ativo": ativo,
+            "Tipo_Alvo": tipo_alvo,
+            "Direcao": direcao,
+            "Horizonte": horizonte,
+            "Sinais": total,
+            "Atingidos_No_Horizonte": atingidos,
+            "Taxa_Atingimento_Horizonte_%": (
+                round(atingidos / total * 100, 2)
+                if total else np.nan
+            ),
+            "No_Prazo_Estimado": no_prazo,
+            "Depois_Do_Prazo": depois,
+            "Nao_Atingiu_Janela": nao_atingidos,
+            "Taxa_No_Prazo_Estimado_%": (
+                round(no_prazo / total * 100, 2)
+                if total else np.nan
+            ),
+            "Pregoes_Reais_Medios": (
+                round(tempos.mean(), 2)
+                if tempos.notna().any() else np.nan
+            ),
+            "Erro_Medio_Pregoes": (
+                round(erros.mean(), 2)
+                if erros.notna().any() else np.nan
+            ),
+            "Erro_Absoluto_Medio_Pregoes": (
+                round(erros.abs().mean(), 2)
+                if erros.notna().any() else np.nan
+            ),
+        })
+
+    return pd.DataFrame(linhas)
+
+
+# ============================================================
+# EXECUÇÃO
+# ============================================================
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Auditoria independente do motor diário do Analisador B3."
+        description=(
+            "Auditoria das projeções históricas "
+            "do Analisador B3."
+        )
     )
-    parser.add_argument("--arquivo", required=True, help="Caminho do CSV histórico do ativo.")
-    parser.add_argument("--inicio", default=None, help="Data inicial YYYY-MM-DD.")
-    parser.add_argument("--fim", default=None, help="Data final YYYY-MM-DD.")
-    parser.add_argument("--horizontes", default="5,10,15,20",
-                        help="Horizontes em pregões, separados por vírgula. Padrão: 5,10,15,20.")
-    parser.add_argument("--saida", default="resultado_auditoria",
-                        help="Pasta de saída. Padrão: resultado_auditoria.")
+
+    parser.add_argument(
+        "--arquivo",
+        required=True,
+        help="Caminho do CSV histórico."
+    )
+
+    parser.add_argument(
+        "--inicio",
+        default=None,
+        help="Data inicial YYYY-MM-DD."
+    )
+
+    parser.add_argument(
+        "--fim",
+        default=None,
+        help="Data final YYYY-MM-DD."
+    )
+
+    parser.add_argument(
+        "--horizontes",
+        default="5,10,15,20",
+        help="Horizontes de avaliação separados por vírgula."
+    )
+
+    parser.add_argument(
+        "--saida",
+        default="resultado_auditoria",
+        help="Pasta dos relatórios."
+    )
+
     args = parser.parse_args()
 
     try:
         motor = importlib.import_module("motor")
-    except Exception as exc:
+    except Exception as erro:
         print("ERRO: não consegui importar motor.py.")
-        print("Coloque auditor.py na mesma pasta de motor.py.")
-        print(f"Detalhe: {exc}")
+        print(f"Detalhe: {erro}")
         sys.exit(2)
 
     dados_brutos = ler_csv(args.arquivo)
-    qualidade, dados = auditar_qualidade(dados_brutos)
 
-    if args.inicio:
-        inicio = pd.to_datetime(args.inicio, errors="raise")
-    else:
-        inicio = dados["Data"].iloc[0] if not dados.empty else pd.NaT
+    qualidade, dados = auditar_qualidade(
+        dados_brutos
+    )
 
-    if args.fim:
-        fim = pd.to_datetime(args.fim, errors="raise")
-    else:
-        fim = dados["Data"].iloc[-1] if not dados.empty else pd.NaT
-
-    # Preservar todo o histórico anterior ao início do período.
-    # O motor precisa desses candles para calcular indicadores e formar sinais
-    # no intervalo escolhido sem perder o aquecimento histórico.
-    dados = dados.sort_values("Data").reset_index(drop=True)
-
-    horizontes = []
-    for item in args.horizontes.split(","):
-        item = item.strip()
-        if item:
-            valor = int(item)
-            if valor < 1:
-                raise ValueError("Os horizontes devem ser inteiros positivos.")
-            horizontes.append(valor)
-    horizontes = sorted(set(horizontes))
-    if not horizontes:
-        raise ValueError("Informe pelo menos um horizonte válido.")
-
-    pasta_saida = Path(args.saida)
-    pasta_saida.mkdir(parents=True, exist_ok=True)
-
-    qualidade.to_csv(pasta_saida / "auditoria_qualidade.csv", index=False, encoding="utf-8-sig")
-
-    dados_periodo = dados[(dados["Data"] >= inicio) & (dados["Data"] <= fim)].copy()
-
-    if len(dados) < getattr(motor, "MINIMO_DADOS", 220) + 1:
-        print(f"AVISO: a base completa tem {len(dados)} linhas.")
-        print("O backtest do motor exige histórico anterior ao período de sinais;")
-        print("com poucos dados, pode não haver sinais auditáveis.")
-
-    if dados.empty or dados_periodo.empty:
-        print("ERRO: não há dados no arquivo ou no intervalo escolhido.")
+    if dados.empty:
+        print("ERRO: não existem registros válidos.")
         sys.exit(2)
 
-    # Indicadores são calculados para conferir se o motor consegue processar a base.
-    dados_indicadores = motor.calcular_indicadores(dados.copy())
-    dados_indicadores.to_csv(
-        pasta_saida / "auditoria_indicadores.csv",
+    inicio = (
+        pd.to_datetime(args.inicio)
+        if args.inicio
+        else dados["Data"].iloc[0]
+    )
+
+    fim = (
+        pd.to_datetime(args.fim)
+        if args.fim
+        else dados["Data"].iloc[-1]
+    )
+
+    horizontes = []
+
+    for item in args.horizontes.split(","):
+        item = item.strip()
+
+        if not item:
+            continue
+
+        valor = int(item)
+
+        if valor < 1:
+            raise ValueError(
+                "Os horizontes devem ser inteiros positivos."
+            )
+
+        horizontes.append(valor)
+
+    horizontes = sorted(set(horizontes))
+
+    if not horizontes:
+        raise ValueError(
+            "Informe ao menos um horizonte válido."
+        )
+
+    dados = dados.sort_values(
+        "Data"
+    ).reset_index(drop=True)
+
+    pasta_saida = Path(args.saida)
+    pasta_saida.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    qualidade.to_csv(
+        pasta_saida / "auditoria_qualidade.csv",
         index=False,
         encoding="utf-8-sig"
     )
 
-    tabelas_sinais = []
-    resumos = []
+    dados_periodo = dados[
+        (dados["Data"] >= inicio)
+        & (dados["Data"] <= fim)
+    ]
 
-    for horizonte in horizontes:
-        print(f"Executando backtest do motor: horizonte de {horizonte} pregões...")
-        resultado = motor.executar_backtest(
-            dados.copy(),
-            inicio,
-            fim,
-            horizonte
+    if dados_periodo.empty:
+        print(
+            "ERRO: não há dados dentro do período selecionado."
         )
+        sys.exit(2)
 
-        if resultado is None:
-            resultado = pd.DataFrame()
+    ticker = Path(args.arquivo).stem.upper()
 
-        if not resultado.empty:
-            resultado.insert(0, "Horizonte_Auditoria", horizonte)
-            tabelas_sinais.append(resultado)
-
-        resumos.append(resumo_backtest(resultado, horizonte))
-
-    sinais = (
-        pd.concat(tabelas_sinais, ignore_index=True)
-        if tabelas_sinais else pd.DataFrame()
+    print(f"Ativo: {ticker}")
+    print(f"Período dos sinais: {inicio.date()} a {fim.date()}")
+    print(f"Registros válidos: {len(dados)}")
+    print(f"Horizontes: {horizontes}")
+    print(
+        "Validando projeções históricas; "
+        "não serão utilizados alvos P&F ou stops ATR."
     )
-    resumo = pd.DataFrame(resumos)
 
-    sinais.to_csv(pasta_saida / "auditoria_sinais.csv", index=False, encoding="utf-8-sig")
-    resumo.to_csv(pasta_saida / "resumo_estatistico.csv", index=False, encoding="utf-8-sig")
+    resultados = auditar_projecoes(
+        motor=motor,
+        dados=dados,
+        inicio=inicio,
+        fim=fim,
+        horizontes=horizontes,
+        ticker=ticker
+    )
 
-    # Relatório de texto com avisos metodológicos.
+    if not resultados:
+        print(
+            "Nenhuma projeção foi auditada. "
+            "Verifique a quantidade de dados, as datas "
+            "e a existência de movimentos históricos concluídos."
+        )
+        sys.exit(0)
+
+    detalhado = pd.DataFrame(resultados)
+    resumo = criar_resumo(detalhado)
+
+    detalhado.to_csv(
+        pasta_saida / "projecoes_historicas_detalhadas.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    resumo.to_csv(
+        pasta_saida / "resumo_projecoes_historicas.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
     relatorio = [
-        "AUDITORIA DO ANALISADOR B3",
+        "AUDITORIA DAS PROJEÇÕES HISTÓRICAS",
         "=" * 60,
-        f"Arquivo analisado: {args.arquivo}",
-        f"Período selecionado: {inicio.date()} a {fim.date()}",
-        f"Registros válidos na base completa: {len(dados)}",
-        f"Registros dentro do período auditado: {len(dados_periodo)}",
-        f"Horizontes: {', '.join(map(str, horizontes))} pregões",
+        f"Ativo: {ticker}",
+        f"Arquivo: {args.arquivo}",
+        f"Período dos sinais: {inicio.date()} a {fim.date()}",
+        f"Registros válidos: {len(dados)}",
+        f"Horizontes avaliados: {horizontes}",
+        f"Janela máxima de observação: "
+        f"{max(JANELA_MAXIMA_OBSERVACAO, max(horizontes))} pregões",
+        f"Linhas detalhadas: {len(detalhado)}",
         "",
         "RESUMO ESTATÍSTICO",
         "-" * 60,
-        resumo.to_string(index=False) if not resumo.empty else "Nenhum sinal gerado.",
+        resumo.to_string(index=False),
         "",
         "OBSERVAÇÕES METODOLÓGICAS",
         "-" * 60,
-        "1. O auditor chama executar_backtest() do motor sem alterar suas regras.",
-        "2. ALVO, STOP, AMBIGUO e NAO ATINGIU seguem os rótulos produzidos pelo motor.",
-        "3. O motor classifica alvo e stop tocados no mesmo candle como AMBIGUO.",
-        "4. A taxa excluindo ambiguidades usa somente ALVO e STOP no denominador.",
-        "5. O R acumulado soma apenas valores de Resultado_R conhecidos; ambiguidades e operações sem resolução não entram nessa soma.",
-        "6. O backtest do motor usa os candles futuros do horizonte informado; isso é uma avaliação histórica, não uma previsão garantida.",
-        "7. O auditor não modifica nem grava alterações em motor.py.",
+        "1. Cada projeção foi calculada usando somente dados até a data do sinal.",
+        "2. Os alvos testados são amplitude histórica e percentual histórico.",
+        "3. A avaliação considera máxima para ALTA e mínima para BAIXA.",
+        "4. Os horizontes medem atingimento em até N pregões futuros.",
+        "5. O prazo estimado é comparado com o tempo real de atingimento.",
+        "6. Os sinais próximos ao fim do histórico são excluídos quando não têm uma janela futura completa.",
+        "7. Esta auditoria não usa alvo P&F nem stop por ATR.",
+        "8. A taxa de atingimento de alvo não representa, isoladamente, rentabilidade de opções.",
         "",
         "ARQUIVOS GERADOS",
         "- auditoria_qualidade.csv",
-        "- auditoria_indicadores.csv",
-        "- auditoria_sinais.csv",
-        "- resumo_estatistico.csv",
-        "- relatorio_auditoria.txt",
+        "- projecoes_historicas_detalhadas.csv",
+        "- resumo_projecoes_historicas.csv",
     ]
+
     (pasta_saida / "relatorio_auditoria.txt").write_text(
-        "\n".join(relatorio), encoding="utf-8"
+        "\n".join(relatorio),
+        encoding="utf-8"
     )
 
     print("\nAUDITORIA CONCLUÍDA")
-    print(f"Pasta de saída: {pasta_saida.resolve()}")
-    print(f"Sinais auditados: {len(sinais)}")
-    print("Arquivos: auditoria_qualidade.csv, auditoria_indicadores.csv,")
-    print("          auditoria_sinais.csv, resumo_estatistico.csv, relatorio_auditoria.txt")
+    print(f"Pasta: {pasta_saida}")
+    print("Arquivos gerados:")
+    print("- auditoria_qualidade.csv")
+    print("- projecoes_historicas_detalhadas.csv")
+    print("- resumo_projecoes_historicas.csv")
+    print("- relatorio_auditoria.txt")
     print("\nResumo:")
     print(resumo.to_string(index=False))
 
