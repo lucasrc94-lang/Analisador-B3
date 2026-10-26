@@ -45,6 +45,9 @@ def percentual(v):
     return f"{float(v)*100:.2f}%".replace(".", ",")
 
 payload = carregar_resultados()
+
+st.write("TESTE — JSON carregado:", payload.get("gerado_em_brasilia"))
+
 if not payload:
     st.warning("Ainda não existem resultados publicados. Execute o workflow ‘Atualizar analisador B3’ no GitHub ou aguarde a execução diária após configurar o repositório.")
     st.stop()
