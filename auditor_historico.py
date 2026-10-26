@@ -1,14 +1,13 @@
 
 import glob
 import os
-import math
 import numpy as np
 import pandas as pd
 import motor
 
 
 # ============================================================
-# CONFIGURAÇÕES DO AUDITOR
+# CONFIGURACOES DO AUDITOR
 # ============================================================
 
 PASTA_DADOS = "dados"
@@ -17,15 +16,16 @@ PASTA_RESULTADOS = "resultados_auditoria"
 MINIMO_DADOS = motor.MINIMO_DADOS
 MAX_OBSERVACAO = 60
 
+HORIZONTES = [5, 10, 15, 20, 60]
+
 
 # ============================================================
-# PREPARAÇÃO DOS CSVs
+# PREPARACAO DOS CSVs
 # ============================================================
 
 def preparar_csv(caminho):
     dados = pd.read_csv(caminho)
 
-    # Normalizar nomes conhecidos sem alterar o motor.
     aliases = {
         "Date": "Data",
         "date": "Data",
@@ -33,7 +33,6 @@ def preparar_csv(caminho):
         "High": "Maxima",
         "Low": "Minima",
         "Close": "Fechamento",
-        "Volume": "Volume",
     }
 
     dados = dados.rename(columns=aliases)
@@ -47,7 +46,8 @@ def preparar_csv(caminho):
     ]
 
     faltantes = [
-        coluna for coluna in obrigatorias
+        coluna
+        for coluna in obrigatorias
         if coluna not in dados.columns
     ]
 
@@ -59,45 +59,65 @@ def preparar_csv(caminho):
     dados["Data"] = pd.to_datetime(
         dados["Data"],
         errors="coerce",
-        dayfirst=True
+        dayfirst=True,
     )
 
     for coluna in [
-        "Fechamento", "Maxima", "Minima", "Volume"
+        "Fechamento",
+        "Maxima",
+        "Minima",
+        "Volume",
     ]:
         dados[coluna] = pd.to_numeric(
             dados[coluna],
-            errors="coerce"
+            errors="coerce",
         )
 
-    dados = dados.dropna(
-        subset=[
-            "Data", "Fechamento",
-            "Maxima", "Minima", "Volume"
-        ]
-    )
-
+    dados = dados.dropna(subset=obrigatorias)
     dados = dados.sort_values("Data")
+
     dados = dados.drop_duplicates(
         subset=["Data"],
-        keep="last"
+        keep="last",
     )
+
     dados = dados.reset_index(drop=True)
 
     return dados
 
 
 # ============================================================
-# VERIFICAR UM ALVO NO FUTURO
+# VERIFICAR ATINGIMENTO DO ALVO
 # ============================================================
 
 def verificar_alvo(
     futuro,
     direcao,
     alvo,
-    pregoes_estimados
+    preco_entrada,
+    prazo_estimado,
 ):
-    if pd.isna(alvo) or alvo <= 0:
+    if (
+        alvo is None
+        or pd.isna(alvo)
+        or not np.isfinite(alvo)
+        or alvo <= 0
+    ):
+        return {
+            "status": "ALVO INVALIDO",
+            "pregoes_reais": None,
+            "data_atingimento": None,
+        }
+
+    # O alvo precisa estar na direcao projetada.
+    if direcao == "ALTA" and alvo <= preco_entrada:
+        return {
+            "status": "ALVO INVALIDO",
+            "pregoes_reais": None,
+            "data_atingimento": None,
+        }
+
+    if direcao == "BAIXA" and alvo >= preco_entrada:
         return {
             "status": "ALVO INVALIDO",
             "pregoes_reais": None,
@@ -106,7 +126,7 @@ def verificar_alvo(
 
     for numero, (_, candle) in enumerate(
         futuro.iterrows(),
-        start=1
+        start=1,
     ):
         if direcao == "ALTA":
             atingiu = candle["Maxima"] >= alvo
@@ -116,7 +136,7 @@ def verificar_alvo(
         if atingiu:
             status = (
                 "NO PRAZO"
-                if numero <= pregoes_estimados
+                if numero <= prazo_estimado
                 else "DEPOIS DO PRAZO"
             )
 
@@ -151,14 +171,12 @@ def auditar_ativo(caminho):
         )
         return []
 
-    # Os indicadores são calculados de forma causal.
-    # Os alvos auditados vêm exclusivamente da função
-    # de projeção histórica do motor.
+    # Mantem os indicadores calculados pelo motor.
     dados = motor.calcular_indicadores(dados)
 
     resultados = []
 
-    # Exigir 60 pregões futuros completos para cada sinal.
+    # Cada sinal tera 60 pregoes futuros completos.
     ultimo_indice = len(dados) - MAX_OBSERVACAO
 
     for indice in range(MINIMO_DADOS, ultimo_indice):
@@ -170,10 +188,11 @@ def auditar_ativo(caminho):
         if direcao not in ("ALTA", "BAIXA"):
             continue
 
-        # Esta função usa os movimentos históricos concluídos.
+        # A projecao utiliza somente os dados disponiveis
+        # ate a data do sinal.
         projecao = motor.estimar_pregoes_historicos(
             historico,
-            direcao
+            direcao,
         )
 
         if not projecao:
@@ -183,7 +202,12 @@ def auditar_ativo(caminho):
             "pregoes_estimados_historico"
         )
 
-        if prazo is None or pd.isna(prazo) or prazo <= 0:
+        if (
+            prazo is None
+            or pd.isna(prazo)
+            or not np.isfinite(prazo)
+            or prazo <= 0
+        ):
             continue
 
         prazo = int(prazo)
@@ -198,11 +222,15 @@ def auditar_ativo(caminho):
         alvos = [
             (
                 "AMPLITUDE",
-                projecao.get("alvo_amplitude_historica")
+                projecao.get(
+                    "alvo_amplitude_historica"
+                ),
             ),
             (
                 "PERCENTUAL",
-                projecao.get("alvo_percentual_historico")
+                projecao.get(
+                    "alvo_percentual_historico"
+                ),
             ),
         ]
 
@@ -211,103 +239,210 @@ def auditar_ativo(caminho):
                 futuro=futuro,
                 direcao=direcao,
                 alvo=alvo,
-                pregoes_estimados=prazo
+                preco_entrada=preco_entrada,
+                prazo_estimado=prazo,
             )
 
-            resultados.append({
+            if (
+                alvo is None
+                or pd.isna(alvo)
+                or not np.isfinite(alvo)
+            ):
+                distancia_reais = np.nan
+                distancia_pct = np.nan
+            else:
+                distancia_reais = abs(
+                    float(alvo) - preco_entrada
+                )
+
+                distancia_pct = (
+                    distancia_reais / preco_entrada * 100
+                    if preco_entrada > 0
+                    else np.nan
+                )
+
+            pregoes_reais = resultado["pregoes_reais"]
+
+            linha = {
                 "Ativo": ticker,
                 "Data_Sinal": sinal["Data"],
                 "Direcao": direcao,
                 "Preco_Entrada": preco_entrada,
                 "Tipo_Alvo": tipo_alvo,
                 "Alvo_Projetado": alvo,
-                "Amplitude_Media_R$": (
-                    projecao.get(
-                        "media_amplitude_historica"
-                    )
+                "Distancia_Alvo_R$": distancia_reais,
+                "Distancia_Alvo_%": distancia_pct,
+                "Amplitude_Media_R$": projecao.get(
+                    "media_amplitude_historica"
                 ),
-                "Amplitude_Media_%": (
-                    projecao.get(
-                        "media_amplitude_pct_historica"
-                    )
+                "Amplitude_Media_%": projecao.get(
+                    "media_amplitude_pct_historica"
                 ),
-                "Tempo_Medio_Movimento": (
-                    projecao.get("tempo_medio_movimento")
+                "Tempo_Medio_Movimento": projecao.get(
+                    "tempo_medio_movimento"
                 ),
                 "Pregoes_Estimados": prazo,
                 "Resultado": resultado["status"],
-                "Pregoes_Reais": resultado["pregoes_reais"],
-                "Data_Atingimento": (
-                    resultado["data_atingimento"]
-                ),
-            })
+                "Pregoes_Reais": pregoes_reais,
+                "Data_Atingimento": resultado[
+                    "data_atingimento"
+                ],
+            }
 
-    print(f"{ticker}: {len(resultados)} alvos auditados.")
+            # Verifica o primeiro atingimento em cada horizonte.
+            for horizonte in HORIZONTES:
+                linha[
+                    f"Atingiu_{horizonte}_Pregoes"
+                ] = (
+                    pregoes_reais is not None
+                    and pregoes_reais <= horizonte
+                )
+
+            resultados.append(linha)
+
+    print(
+        f"{ticker}: {len(resultados)} alvos auditados."
+    )
+
     return resultados
 
 
 # ============================================================
-# RESUMO DOS RESULTADOS
+# CLASSIFICAR DISTANCIAS EM TRES FAIXAS
+# ============================================================
+
+def classificar_faixa_distancia(detalhado):
+    detalhado = detalhado.copy()
+
+    detalhado["Faixa_Distancia"] = pd.NA
+
+    grupos = [
+        "Ativo",
+        "Tipo_Alvo",
+        "Direcao",
+    ]
+
+    for _, indices in detalhado.groupby(
+        grupos,
+        dropna=False,
+    ).groups.items():
+
+        distancias = detalhado.loc[
+            indices,
+            "Distancia_Alvo_%",
+        ]
+
+        validas = distancias.dropna()
+
+        if validas.empty:
+            continue
+
+        # Divide cada grupo em tercis.
+        posicoes = validas.rank(
+            method="first",
+            pct=True,
+        )
+
+        faixas = np.select(
+            [
+                posicoes <= 1 / 3,
+                posicoes <= 2 / 3,
+            ],
+            [
+                "MENORES",
+                "INTERMEDIARIOS",
+            ],
+            default="MAIORES",
+        )
+
+        detalhado.loc[
+            posicoes.index,
+            "Faixa_Distancia",
+        ] = faixas
+
+    return detalhado
+
+
+# ============================================================
+# RESUMO POR ATIVO, ALVO, DIRECAO E DISTANCIA
 # ============================================================
 
 def criar_resumo(detalhado):
-    if detalhado.empty:
+    validos = detalhado[
+        detalhado["Distancia_Alvo_%"].notna()
+    ].copy()
+
+    if validos.empty:
         return pd.DataFrame()
 
-    resumo = (
-        detalhado
-        .groupby(["Ativo", "Tipo_Alvo", "Direcao"])
-        .agg(
-            Total=("Resultado", "size"),
-            No_Prazo=(
-                "Resultado",
-                lambda serie: (serie == "NO PRAZO").sum()
-            ),
-            Depois_Do_Prazo=(
-                "Resultado",
-                lambda serie: (
-                    serie == "DEPOIS DO PRAZO"
-                ).sum()
-            ),
-            Nao_Atingiu=(
-                "Resultado",
-                lambda serie: (
-                    serie == "NAO ATINGIU EM 60 PREGOES"
-                ).sum()
-            ),
-            Prazo_Medio_Estimado=(
-                "Pregoes_Estimados", "mean"
-            ),
-            Pregoes_Medios_Atingimento=(
-                "Pregoes_Reais", "mean"
-            ),
+    grupos = [
+        "Ativo",
+        "Tipo_Alvo",
+        "Direcao",
+        "Faixa_Distancia",
+    ]
+
+    agregacoes = {
+        "Total": ("Resultado", "size"),
+        "Distancia_Media_R$": (
+            "Distancia_Alvo_R$",
+            "mean",
+        ),
+        "Distancia_Media_%": (
+            "Distancia_Alvo_%",
+            "mean",
+        ),
+        "Distancia_Mediana_%": (
+            "Distancia_Alvo_%",
+            "median",
+        ),
+        "Prazo_Estimado_Medio": (
+            "Pregoes_Estimados",
+            "mean",
+        ),
+        "Prazo_Estimado_Mediano": (
+            "Pregoes_Estimados",
+            "median",
+        ),
+    }
+
+    for horizonte in HORIZONTES:
+        agregacoes[
+            f"Atingidos_Em_{horizonte}"
+        ] = (
+            f"Atingiu_{horizonte}_Pregoes",
+            "sum",
         )
+
+    resumo = (
+        validos
+        .groupby(grupos, dropna=False)
+        .agg(**agregacoes)
         .reset_index()
     )
 
-    resumo["Taxa_Atingimento_No_Prazo_%"] = (
-        resumo["No_Prazo"] / resumo["Total"] * 100
-    )
-
-    resumo["Taxa_Atingimento_Em_60_%"] = (
-        (
-            resumo["No_Prazo"]
-            + resumo["Depois_Do_Prazo"]
+    for horizonte in HORIZONTES:
+        resumo[
+            f"Taxa_Atingimento_{horizonte}_%"
+        ] = (
+            resumo[
+                f"Atingidos_Em_{horizonte}"
+            ]
+            / resumo["Total"]
+            * 100
         )
-        / resumo["Total"] * 100
-    )
 
     return resumo
 
 
 # ============================================================
-# EXECUÇÃO
+# EXECUCAO
 # ============================================================
 
 def main():
     os.makedirs(
         PASTA_RESULTADOS,
-        exist_ok=True
+        exist_ok=True,
     )
 
     arquivos = glob.glob(
@@ -323,50 +458,60 @@ def main():
 
     for caminho in sorted(arquivos):
         try:
-            todos.extend(auditar_ativo(caminho))
+            todos.extend(
+                auditar_ativo(caminho)
+            )
         except Exception as erro:
             print(
-                f"ERRO em {os.path.basename(caminho)}: {erro}"
+                f"ERRO em {os.path.basename(caminho)}: "
+                f"{erro}"
             )
 
     if not todos:
         print(
-            "Nenhum sinal pôde ser auditado. "
-            "Confira os CSVs e a quantidade de dados."
+            "Nenhum sinal foi auditado. "
+            "Confira os CSVs e as funcoes do motor.py."
         )
         return
 
     detalhado = pd.DataFrame(todos)
+
+    detalhado = classificar_faixa_distancia(
+        detalhado
+    )
+
     resumo = criar_resumo(detalhado)
 
     arquivo_detalhado = os.path.join(
         PASTA_RESULTADOS,
-        "auditoria_historica_detalhada.csv"
+        "auditoria_historica_detalhada.csv",
     )
 
     arquivo_resumo = os.path.join(
         PASTA_RESULTADOS,
-        "auditoria_historica_resumo.csv"
+        "auditoria_historica_resumo.csv",
     )
 
     detalhado.to_csv(
         arquivo_detalhado,
         index=False,
-        encoding="utf-8-sig"
+        encoding="utf-8-sig",
     )
 
     resumo.to_csv(
         arquivo_resumo,
         index=False,
-        encoding="utf-8-sig"
+        encoding="utf-8-sig",
     )
 
-    print("\nAUDITORIA HISTÓRICA CONCLUÍDA")
-    print(f"Sinais/alvos: {len(detalhado)}")
-    print(f"Detalhado: {arquivo_detalhado}")
-    print(f"Resumo: {arquivo_resumo}")
-    print("\nRESUMO:")
-    print(resumo.to_string(index=False))
+    print("\nAUDITORIA HISTORICA CONCLUIDA")
+    print(f"Registros auditados: {len(detalhado)}")
+    print(f"Arquivo detalhado: {arquivo_detalhado}")
+    print(f"Arquivo resumo: {arquivo_resumo}")
+
+    if not resumo.empty:
+        print("\nRESUMO POR DISTANCIA E DIRECAO:")
+        print(resumo.to_string(index=False))
 
 
 if __name__ == "__main__":
