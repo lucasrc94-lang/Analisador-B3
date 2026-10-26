@@ -54,12 +54,53 @@ if not resultados:
     st.error("O último processamento não gerou análises. Consulte a seção de erros no final do painel.")
     st.stop()
 
+```python
 col1, col2, col3 = st.columns(3)
-col1.metric("Ativos analisados", len(resultados))
-col2.metric("Data de geração", str(payload.get("gerado_em_brasilia", "N/D"))[:16].replace("T", " "))
-col3.metric("Fonte", "Yahoo Finance · diário")
-st.caption("A coleta pode falhar ou atrasar. Confira a data da última vela de cada ativo antes de usar os dados.")
 
+col1.metric(
+    "Ativos analisados",
+    len(resultados)
+)
+
+data_geracao = payload.get("gerado_em_brasilia", "N/D")
+
+if data_geracao != "N/D":
+    try:
+        data_formatada = datetime.fromisoformat(
+            str(data_geracao).replace("Z", "+00:00")
+        )
+
+        # Se o JSON tiver fuso horário, converte para Brasília.
+        if data_formatada.tzinfo is not None:
+            from zoneinfo import ZoneInfo
+            data_formatada = data_formatada.astimezone(
+                ZoneInfo("America/Sao_Paulo")
+            )
+
+        data_formatada = data_formatada.strftime("%d/%m/%Y às %H:%M")
+
+    except (ValueError, TypeError):
+        data_formatada = str(data_geracao)
+
+else:
+    data_formatada = "N/D"
+
+col2.metric(
+    "Última atualização",
+    data_formatada
+)
+
+col3.metric(
+    "Fonte",
+    "Yahoo Finance · diário"
+)
+
+st.caption(
+    "A data indica quando o processamento foi registrado, "
+    "não necessariamente a data da última cotação disponível. "
+    "Confira a data do último candle de cada ativo."
+)
+```
 df = pd.DataFrame(resultados)
 ativos = sorted(df["ativo"].dropna().unique().tolist())
 selecionado = st.selectbox("Escolha um ativo para detalhar", options=ativos)
