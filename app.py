@@ -55,6 +55,7 @@ if not resultados:
     st.stop()
 
 ```python
+```python
 col1, col2, col3 = st.columns(3)
 
 col1.metric(
@@ -64,26 +65,15 @@ col1.metric(
 
 data_geracao = payload.get("gerado_em_brasilia", "N/D")
 
-if data_geracao != "N/D":
-    try:
+try:
+    if data_geracao != "N/D":
         data_formatada = datetime.fromisoformat(
             str(data_geracao).replace("Z", "+00:00")
-        )
-
-        # Se o JSON tiver fuso horário, converte para Brasília.
-        if data_formatada.tzinfo is not None:
-            from zoneinfo import ZoneInfo
-            data_formatada = data_formatada.astimezone(
-                ZoneInfo("America/Sao_Paulo")
-            )
-
-        data_formatada = data_formatada.strftime("%d/%m/%Y às %H:%M")
-
-    except (ValueError, TypeError):
-        data_formatada = str(data_geracao)
-
-else:
-    data_formatada = "N/D"
+        ).strftime("%d/%m/%Y às %H:%M")
+    else:
+        data_formatada = "N/D"
+except (ValueError, TypeError):
+    data_formatada = str(data_geracao)
 
 col2.metric(
     "Última atualização",
@@ -96,9 +86,9 @@ col3.metric(
 )
 
 st.caption(
-    "A data indica quando o processamento foi registrado, "
-    "não necessariamente a data da última cotação disponível. "
-    "Confira a data do último candle de cada ativo."
+    "A atualização indica quando o arquivo de análises foi gerado. "
+    "Como os dados são diários, confira também a data do último pregão "
+    "disponível para cada ativo."
 )
 ```
 df = pd.DataFrame(resultados)
