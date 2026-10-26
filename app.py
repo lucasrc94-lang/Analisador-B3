@@ -61,10 +61,9 @@ col1.metric(
     len(resultados)
 )
 
-col2.metric(
-    "Fonte",
-    "Yahoo Finance · diário"
-)
+```python
+col2.metric("Última atualização", datetime.fromisoformat(payload["gerado_em_brasilia"]).strftime("%d/%m/%Y %H:%M:%S"))
+```
 
 data_geracao = payload.get("gerado_em_brasilia")
 
