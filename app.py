@@ -70,20 +70,35 @@ data_geracao = payload.get("gerado_em_brasilia")
 if data_geracao:
     try:
         data_hora = datetime.fromisoformat(str(data_geracao))
-        data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M:%S")
 
-        st.info(
-            f"🕒 **Última atualização:** {data_formatada} "
-            "(horário de Brasília)"
+        st.markdown(
+            f"""
+            <div style="
+                padding: 15px;
+                border-radius: 8px;
+                background-color: #163326;
+                border: 1px solid #2ecc71;
+                margin: 10px 0 20px 0;
+            ">
+                <span style="font-size: 15px; color: #b7e4c7;">
+                    🕒 ÚLTIMA ATUALIZAÇÃO — HORÁRIO DE BRASÍLIA
+                </span>
+                <br>
+                <span style="font-size: 25px; font-weight: bold; color: white;">
+                    {data_hora.strftime("%d/%m/%Y às %H:%M:%S")}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
     except (ValueError, TypeError):
         st.warning("Não foi possível interpretar a data da atualização.")
 else:
     st.warning("Data e hora da última atualização não disponíveis.")
 
-st.caption(
-    "O horário indica quando o arquivo de análises foi gerado."
-)
+st.caption("O horário indica quando o arquivo de análises foi gerado.")
+
 df = pd.DataFrame(resultados)
 ativos = sorted(df["ativo"].dropna().unique().tolist())
 selecionado = st.selectbox("Escolha um ativo para detalhar", options=ativos)
