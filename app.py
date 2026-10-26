@@ -54,39 +54,37 @@ if not resultados:
     st.error("O último processamento não gerou análises. Consulte a seção de erros no final do painel.")
     st.stop()
 
-```python
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 col1.metric(
     "Ativos analisados",
     len(resultados)
 )
 
-data_geracao = payload.get("gerado_em_brasilia")
-
-if data_geracao:
-    data_hora = datetime.fromisoformat(
-        str(data_geracao).replace("Z", "+00:00")
-    )
-    data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M:%S")
-else:
-    data_formatada = "Não disponível"
-
 col2.metric(
-    "Última atualização",
-    data_formatada
-)
-
-col3.metric(
     "Fonte",
     "Yahoo Finance · diário"
 )
 
+data_geracao = payload.get("gerado_em_brasilia")
+
+if data_geracao:
+    try:
+        data_hora = datetime.fromisoformat(str(data_geracao))
+        data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M:%S")
+
+        st.info(
+            f"🕒 **Última atualização:** {data_formatada} "
+            "(horário de Brasília)"
+        )
+    except (ValueError, TypeError):
+        st.warning("Não foi possível interpretar a data da atualização.")
+else:
+    st.warning("Data e hora da última atualização não disponíveis.")
+
 st.caption(
-    "O horário indica quando o arquivo de análises foi gerado, "
-    "no horário de Brasília."
+    "O horário indica quando o arquivo de análises foi gerado."
 )
-```
 df = pd.DataFrame(resultados)
 ativos = sorted(df["ativo"].dropna().unique().tolist())
 selecionado = st.selectbox("Escolha um ativo para detalhar", options=ativos)
