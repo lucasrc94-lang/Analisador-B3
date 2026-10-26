@@ -1,96 +1,116 @@
+if not dentro.empty
+                    else None
+                )
 
-import time
-import requests
-import pandas as pd
+                resultados.append({
+                    "Tipo": tipo,
+                    "Tipo_alvo": tipo_alvo,
+                    "Prazo_pregoes": prazo,
+                    "Operacoes_avaliaveis": avaliaveis,
+                    "Atingiu_dentro": len(dentro),
+                    "Atingiu_depois": len(depois),
+                    "Nao_atingiu_no_historico": len(nao_atingiu),
+                    "Inconclusivos": len(inconclusivos),
+                    "Sem_alvo_historico": len(sem_alvo),
+                    "Taxa_atingimento_pct": (
+                        round(taxa, 2)
+                        if taxa is not None
+                        else None
+                    ),
+                    "Mediana_pregoes_ate_alvo": mediana_tempo
+                })
 
-from intraday import (
-    coletar_candles_intraday,
-    gerar_sinais_intraday
-)
-
-
-TZ_BR = "America/Sao_Paulo"
-
-
-def coletar_candles_diarios(ativo, tentativas=3):
-    """Coleta candles diários para calcular ondas históricas concluídas."""
-    ticker = ativo.upper().strip()
-    if not ticker.endswith(".SA"):
-        ticker = f"{ticker}.SA"
-
-    url = (
-        "https://query1.finance.yahoo.com/v8/finance/chart/"
-        f"{ticker}"
-    )
-    params = {"range": "5y", "interval": "1d", "events": "history"}
-    headers = {"User-Agent": "Mozilla/5.0"}
-    erro = None
-
-    for tentativa in range(tentativas):
-        try:
-            resposta = requests.get(
-                url, params=params, headers=headers, timeout=30
-            )
-            resposta.raise_for_status()
-            payload = resposta.json()
-            chart = payload.get("chart", {})
-            if chart.get("error"):
-                raise RuntimeError(str(chart["error"]))
-
-            resultados = chart.get("result")
-            if not resultados:
-                raise ValueError(f"Nenhum candle diário retornado para {ticker}.")
-
-            resultado = resultados[0]
-            timestamps = resultado.get("timestamp") or []
-            cotacoes = resultado.get("indicators", {}).get("quote", [{}])[0]
-            if not timestamps:
-                raise ValueError("Histórico diário vazio.")
-
-            datas = pd.to_datetime(
-                timestamps, unit="s", utc=True
-            ).tz_convert(TZ_BR)
-
-            diarios = pd.DataFrame({
-                "Data": datas,
-                "Abertura": cotacoes.get("open"),
-                "Maxima": cotacoes.get("high"),
-                "Minima": cotacoes.get("low"),
-                "Fechamento": cotacoes.get("close"),
-                "Volume": cotacoes.get("volume"),
-            })
-
-            colunas = ["Abertura", "Maxima", "Minima", "Fechamento", "Volume"]
-            for coluna in colunas:
-                diarios[coluna] = pd.to_numeric(diarios[coluna], errors="coerce")
-
-            diarios = (
-                diarios.dropna(subset=colunas)
-                .sort_values("Data")
-                .drop_duplicates("Data", keep="last")
-                .reset_index(drop=True)
-            )
-            if diarios.empty:
-                raise ValueError("Não há candles diários válidos.")
-
-            # A MME21 é calculada exclusivamente com fechamentos diários.
-            diarios["MME21"] = diarios["Fechamento"].ewm(
-                span=21, adjust=False
-            ).mean()
-            return diarios
-
-        except Exception as exc:
-            erro = exc
-            if tentativa < tentativas - 1:
-                time.sleep(2 * (tentativa + 1))
-
-    raise RuntimeError(f"Falha ao coletar candles diários de {ticker}: {erro}")
+    return pd.DataFrame(resultados)
 
 
-def auditar_sinais(dados):
-    """
-    Audita cada rejeição e verifica se houve confirmação
-    nos dois candles seguintes.
-    """
 
-    dados = dados.reset_index(drop=True).copy()
+def testar():
+
+    ativo = "PETR4"
+
+    print("=" * 80)
+    print("AUDITORIA DA ESTRATEGIA INTRADAY")
+    print("=" * 80)
+
+    dados = coletar_candles_intraday(ativo)
+    dados_diarios = coletar_candles_diarios(ativo)
+
+    if dados.empty:
+        print("Nenhum candle foi coletado.")
+        return
+
+    print(f"\nAtivo: {ativo}")
+    print(f"Total de candles: {len(dados)}")
+    print(f"Primeiro candle: {dados['Data'].iloc[0]}")
+    print(f"Ultimo candle: {dados['Data'].iloc[-1]}")
+
+    dados = gerar_sinais_intraday(dados)
+    auditoria = auditar_sinais(dados)
+    alvos = avaliar_alvos_por_pregoes(dados, auditoria, dados_diarios)
+    resumo_alvos = resumir_alvos_por_pregoes(alvos)
+
+    if auditoria.empty:
+        print("\nNenhuma rejeicao encontrada.")
+    else:
+        pd.set_option("display.max_columns", None)
+        pd.set_option("display.width", 240)
+        pd.set_option("display.max_colwidth", 25)
+
+        print("\n" + "=" * 80)
+        print("DETALHAMENTO DAS REJEICOES")
+        print("=" * 80)
+
+        print(
+            auditoria.round(3).to_string(index=False)
+        )
+
+        print("\n" + "=" * 80)
+        print("RESUMO DA AUDITORIA")
+        print("=" * 80)
+
+        print(f"Rejeicoes encontradas: {len(auditoria)}")
+        print(
+            "Compras:",
+            len(auditoria[auditoria["Tipo"] == "COMPRA"])
+        )
+        print(
+            "Vendas:",
+            len(auditoria[auditoria["Tipo"] == "VENDA"])
+        )
+        print(
+            "Confirmadas:",
+            len(auditoria[auditoria["Status"] == "CONFIRMADA"])
+        )
+        print(
+            "Sem confirmacao:",
+            len(auditoria[auditoria["Status"] == "SEM CONFIRMAÇÃO"])
+        )
+
+        print("\nSinais confirmados registrados pelo motor:")
+        print(dados["Sinal"].value_counts().to_string())
+        
+        
+        print("\n" + "=" * 80)
+        print("AUDITORIA DOS ALVOS POR PRAZO EM PREGOES")
+        print("=" * 80)
+
+        if alvos.empty:
+            print("Nenhuma entrada confirmada para avaliar.")
+        else:
+            print(alvos.to_string(index=False))
+
+            print("\n" + "=" * 80)
+            print("RESUMO ESTATISTICO DOS ALVOS")
+            print("=" * 80)
+
+            if resumo_alvos.empty:
+                print("Nenhum resultado disponível para resumir.")
+            else:
+                print(resumo_alvos.to_string(index=False))
+
+
+    print("\nAuditoria concluida!")
+
+
+if __name__ == "__main__":
+    testar()
