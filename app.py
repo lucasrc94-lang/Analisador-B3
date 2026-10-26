@@ -56,14 +56,8 @@ if not resultados:
 
 col1, col2 = st.columns(2)
 
-col1.metric(
-    "Ativos analisados",
-    len(resultados)
-)
-
-```python
-col2.metric("Última atualização", datetime.fromisoformat(payload["gerado_em_brasilia"]).strftime("%d/%m/%Y %H:%M:%S"))
-```
+col1.metric("Ativos analisados", len(resultados))
+col2.metric("Fonte", "Yahoo Finance · diário")
 
 data_geracao = payload.get("gerado_em_brasilia")
 
@@ -71,27 +65,11 @@ if data_geracao:
     try:
         data_hora = datetime.fromisoformat(str(data_geracao))
 
-        st.markdown(
-            f"""
-            <div style="
-                padding: 15px;
-                border-radius: 8px;
-                background-color: #163326;
-                border: 1px solid #2ecc71;
-                margin: 10px 0 20px 0;
-            ">
-                <span style="font-size: 15px; color: #b7e4c7;">
-                    🕒 ÚLTIMA ATUALIZAÇÃO — HORÁRIO DE BRASÍLIA
-                </span>
-                <br>
-                <span style="font-size: 25px; font-weight: bold; color: white;">
-                    {data_hora.strftime("%d/%m/%Y às %H:%M:%S")}
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.info(
+            f"🕒 **Última atualização:** "
+            f"{data_hora.strftime('%d/%m/%Y às %H:%M:%S')} "
+            "(horário de Brasília)"
         )
-
     except (ValueError, TypeError):
         st.warning("Não foi possível interpretar a data da atualização.")
 else:
