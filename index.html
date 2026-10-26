@@ -302,54 +302,40 @@ async function carregar() {
     document.getElementById("totalBaixa").textContent = baixas;
     document.getElementById("totalLateral").textContent = laterais;
 
+    
     const datas = ativos.map(a => a.data).filter(Boolean).sort();
+    const dataGeracao = json.gerado_em_brasilia;
+    const elementoPainel = document.getElementById("dataPainel");
 
-const dataGeracao = json.gerado_em_brasilia;
-const elementoHorario = document.getElementById("dataAtualizacao");
+    if (dataGeracao) {
+      const dataHora = new Date(dataGeracao);
 
-if (dataGeracao) {
-    const dataHora = new Date(dataGeracao);
+      if (!Number.isNaN(dataHora.getTime())) {
+        const horarioFormatado = dataHora.toLocaleString("pt-BR", {
+          timeZone: "America/Sao_Paulo",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        });
 
-    const horarioFormatado = dataHora.toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false
-    });
-
-    const textoHorario =
-        "🕒 Última atualização: " + horarioFormatado +
-        " (horário de Brasília)";
-
-    document.getElementById("dataPainel").textContent = textoHorario;
-    elementoHorario.textContent = textoHorario;
-}  
-  else {
-    const textoHorario =
-        "Data de geração não disponível. Último candle: " +
-        (datas.length ? datas[datas.length - 1] : "não informada");
-
-    document.getElementById("dataPainel").textContent = textoHorario;
-    elementoHorario.textContent = textoHorario;
-}
-  else {
-    document.getElementById("dataPainel").textContent =
+        elementoPainel.textContent =
+          "🕒 Última atualização: " + horarioFormatado +
+          " (horário de Brasília)";
+      } else {
+        elementoPainel.textContent =
+          "Data dos dados: " +
+          (datas.length ? datas[datas.length - 1] : "não informada");
+      }
+    } else {
+      elementoPainel.textContent =
         "Data dos dados: " +
         (datas.length ? datas[datas.length - 1] : "não informada");
-}
+    }
 
-    renderizar();
-  } catch (erro) {
-    status.className = "error";
-    status.textContent =
-      "Não foi possível carregar os dados: " + erro.message +
-      ". Confira se analises.json está na pasta principal do repositório.";
-  }
-}
 
 document.getElementById("busca").addEventListener("input", renderizar);
 document.getElementById("filtro").addEventListener("change", renderizar);
