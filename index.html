@@ -311,20 +311,18 @@ async function carregar() {
       const dataHora = new Date(dataGeracao);
 
       if (!Number.isNaN(dataHora.getTime())) {
-        const horarioFormatado = dataHora.toLocaleString("pt-BR", {
-          timeZone: "America/Sao_Paulo",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false
-        });
-
         elementoPainel.textContent =
-          "🕒 Última atualização: " + horarioFormatado +
-          " (horário de Brasília)";
+          "Última atualização: " +
+          dataHora.toLocaleString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+          }) + " (horário de Brasília)";
       } else {
         elementoPainel.textContent =
           "Data dos dados: " +
@@ -335,7 +333,13 @@ async function carregar() {
         "Data dos dados: " +
         (datas.length ? datas[datas.length - 1] : "não informada");
     }
+
+  } catch (erro) {
+    status.className = "error";
+    status.textContent =
+      "Não foi possível carregar os dados: " + erro.message;
   }
+}
 
 document.getElementById("busca").addEventListener("input", renderizar);
 document.getElementById("filtro").addEventListener("change", renderizar);
