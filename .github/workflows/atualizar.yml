@@ -1,10 +1,12 @@
+
 name: Atualizar analisador B3
 
 on:
   workflow_dispatch:
   schedule:
-    # Solicita execução a cada 10 minutos.
-    - cron: '*/5 * * * *'
+    # A cada 30 minutos, de segunda a sexta.
+    # UTC-3: aproximadamente das 10h às 18h30 em Brasília.
+    - cron: '*/5 10-17 * * 1-5'
 
 permissions:
   contents: write
@@ -17,6 +19,7 @@ jobs:
   atualizar:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -31,12 +34,14 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - name: Instalar dependências
-        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Coletar cotações e calcular análises
         run: python atualizar.py
 
-      - name: Salvar histórico e resultados no repositório
+      - name: Salvar histórico e resultados
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -44,6 +49,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Nenhuma alteração de dados para publicar."
           else
-            git commit -m "Atualização diária do analisador B3"
+            git commit -m "Atualização automática do analisador B3"
             git push
           fi
