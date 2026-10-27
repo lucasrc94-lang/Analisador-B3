@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador B3 | Painel Técnico Multitemporal</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1120;--card:#151e30;--line:#2a3850;--text:#edf3fc;--muted:#9babc2;--green:#35d49a;--red:#ff727c;--yellow:#f4c96b;--blue:#79b8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Arial,sans-serif}header{padding:26px max(20px,calc((100% - 1500px)/2));border-bottom:1px solid var(--line);background:#101a2c}h1{margin:0 0 5px;font-size:27px}p{color:var(--muted);margin:5px 0}main{max-width:1540px;margin:auto;padding:22px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin-bottom:20px}.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px}.metric{font-size:26px;font-weight:bold;margin-top:5px}.label{color:var(--muted);font-size:12px}.controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px}input,select,button{background:#0d1626;color:var(--text);border:1px solid var(--line);padding:11px 12px;border-radius:8px;font-size:14px}input{flex:1;min-width:190px}button{cursor:pointer}button:hover{border-color:var(--blue)}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:1500px}th,td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{color:var(--muted);font-weight:normal;font-size:12px}tbody tr:hover{background:#1b2940}.ticker{font-weight:bold;color:var(--blue)}.badge{display:inline-block;border-radius:6px;padding:4px 8px;font-size:12px;background:#293449}.alta{color:var(--green);background:#12382f}.baixa{color:var(--red);background:#40232c}.lateral{color:var(--yellow);background:#3d3420}.error{color:var(--red)}.muted{color:var(--muted)}#status{margin:12px 0}footer{color:var(--muted);font-size:12px;padding:20px 0}.section-title{margin:0 0 12px;font-size:16px}.small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header><h1>ANALISADOR B3</h1><p>Painel de indicadores e tendências técnicas — diário, 1h e 15min</p><p id="dataPainel">Carregando dados...</p></header>
+<main>
+<section class="cards">
+ <div class="card"><div class="label">Ativos carregados</div><div class="metric" id="total">—</div></div>
+ <div class="card"><div class="label">Tendência diária de alta</div><div class="metric" id="totalAlta">—</div></div>
+ <div class="card"><div class="label">Tendência diária de baixa</div><div class="metric" id="totalBaixa">—</div></div>
+ <div class="card"><div class="label">Períodos alinhados (diário + 1h)</div><div class="metric" id="totalAlinhados">—</div></div>
+</section>
+<section class="panel">
+ <div class="controls"><input id="busca" placeholder="Buscar ativo: PETR4, VALE3..."/><select id="filtro"><option value="TODOS">Todas as tendências</option><option value="ALTA">Tendência diária de alta</option><option value="BAIXA">Tendência diária de baixa</option><option value="CONSOLIDAÇÃO">Consolidação / neutra</option><option value="ALINHADOS">Diário + 1h alinhados</option><option value="DIVERGENTES">Diário + 1h divergentes</option></select><button id="recarregar">Atualizar dados</button></div>
+ <div id="status">Lendo analises.json...</div>
+ <h2 class="section-title">Visão multitemporal</h2>
+ <p class="small">A leitura conjunta compara tendências técnicas; não constitui recomendação automática de compra ou venda. Dados intraday podem estar atrasados ou indisponíveis.</p>
+ <div class="table-wrap"><table><thead><tr>
+ <th>Ativo</th><th>Data diária</th><th>Preço</th><th>MME21</th><th>MME200</th><th>ATR14</th><th>Vol. relativo</th><th>Velocidade</th><th>Tendência diária</th><th>1 hora</th><th>15 minutos</th><th>Leitura conjunta</th><th>Aceleração</th><th>Alvo técnico</th><th>Pregões estimados</th><th>Situação P&amp;F</th>
+ </tr></thead><tbody id="tabela"></tbody></table></div>
+</section>
+<footer>Dados obtidos de analises.json. Os indicadores são referências técnicas e não constituem recomendação de investimento.</footer>
+</main>
+<script>
+let ativos=[];
+function escapar(v){return String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function numero(v,casas=2){if(v===null||v===undefined||v==='')return '—';const n=Number(v);if(!Number.isFinite(n))return escapar(v);return n.toLocaleString('pt-BR',{minimumFractionDigits:casas,maximumFractionDigits:casas});}
+function dinheiro(v){if(v===null||v===undefined||v==='')return '—';const n=Number(v);if(!Number.isFinite(n))return '—';return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function normalizar(json){if(Array.isArray(json))return json;if(json&&typeof json==='object'){for(const k of ['ativos','resultados','analises','análises','dados'])if(Array.isArray(json[k]))return json[k];if(json.ativo||json.ticker)return [json];return Object.values(json).filter(x=>x&&typeof x==='object'&&(x.ativo||x.ticker));}return [];}
+function classeTendencia(t){const s=String(t||'').toUpperCase();if(s.includes('ALTA'))return 'alta';if(s.includes('BAIXA'))return 'baixa';return 'lateral';}
+function tendenciaIntraday(a,periodo){const obj=a.intraday&&a.intraday[periodo];if(!obj)return 'N/D';if(obj.status==='ERRO')return 'ERRO';return obj.tendencia||obj.status||'N/D';}
+function alinhamento(a){const diaria=String(a.tendencia||'').toUpperCase(), h=String(tendenciaIntraday(a,'1h')).toUpperCase();if(h==='ERRO'||h==='N/D'||h.includes('INSUFICIENTES'))return 'Dados intraday indisponíveis';if((diaria.includes('ALTA')&&h==='ALTA')||(diaria.includes('BAIXA')&&h==='BAIXA'))return 'Alinhados: diário + 1h';if(diaria.includes('ALTA')||diaria.includes('BAIXA'))return 'Divergência: diário x 1h';return 'Tendência diária neutra';}
+function classeLeitura(s){if(s.startsWith('Alinhados'))return 'alta';if(s.startsWith('Divergência'))return 'lateral';return 'lateral';}
+function renderizar(){const busca=document.getElementById('busca').value.trim().toUpperCase(),filtro=document.getElementById('filtro').value;const lista=ativos.filter(a=>{const ticker=String(a.ativo||a.ticker||'').toUpperCase(),t=String(a.tendencia||'').toUpperCase(),al=alinhamento(a);let ok=true;if(filtro==='ALINHADOS')ok=al.startsWith('Alinhados');else if(filtro==='DIVERGENTES')ok=al.startsWith('Divergência');else if(filtro!=='TODOS')ok=t.includes(filtro);return ticker.includes(busca)&&ok;}).sort((a,b)=>String(a.ativo||a.ticker||'').localeCompare(String(b.ativo||b.ticker||'')));
+document.getElementById('tabela').innerHTML=lista.map(a=>{const tendencia=String(a.tendencia||'NÃO INFORMADA'),h=tendenciaIntraday(a,'1h'),m=tendenciaIntraday(a,'15m'),al=alinhamento(a);return `<tr><td class="ticker">${escapar(a.ativo||a.ticker)}</td><td>${escapar(a.data)}</td><td><strong>${dinheiro(a.preco)}</strong></td><td>${numero(a.mme21)}</td><td>${numero(a.mme200)}</td><td>${numero(a.atr14,3)}</td><td>${numero(a.volume_relativo)}x</td><td>${escapar(a.velocidade_classificacao||a.velocidade)}</td><td><span class="badge ${classeTendencia(tendencia)}">${escapar(tendencia)}</span></td><td><span class="badge ${classeTendencia(h)}">${escapar(h)}</span></td><td><span class="badge ${classeTendencia(m)}">${escapar(m)}</span></td><td><span class="badge ${classeLeitura(al)}">${escapar(al)}</span></td><td>${escapar(a.aceleracao)}</td><td>${dinheiro(a.alvo_tecnico??a.alvo_amplitude_historica)}</td><td>${a.pregoes_estimados!=null?Math.ceil(Number(a.pregoes_estimados))+' pregões':'—'}</td><td>${escapar(a.situacao_preco||'—')}</td></tr>`;}).join('');document.getElementById('status').textContent=`${lista.length} ativo(s) exibido(s) de ${ativos.length}.`;
+}
+async function carregar(){const status=document.getElementById('status');status.textContent='Carregando analises.json...';status.className='';try{const r=await fetch('./dados/analises.json?atualizacao='+Date.now());if(!r.ok)throw new Error('HTTP '+r.status);const json=await r.json();ativos=normalizar(json);if(!ativos.length)throw new Error('Nenhum ativo encontrado na estrutura do JSON.');const altas=ativos.filter(a=>String(a.tendencia||'').toUpperCase().includes('ALTA')).length,baixas=ativos.filter(a=>String(a.tendencia||'').toUpperCase().includes('BAIXA')).length,alinhados=ativos.filter(a=>alinhamento(a).startsWith('Alinhados')).length;document.getElementById('total').textContent=ativos.length;document.getElementById('totalAlta').textContent=altas;document.getElementById('totalBaixa').textContent=baixas;document.getElementById('totalAlinhados').textContent=alinhados;const gerado=json.gerado_em_brasilia;if(gerado){document.getElementById('dataPainel').textContent='Última atualização: '+new Date(gerado).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' (horário de Brasília)';}else{document.getElementById('dataPainel').textContent='Data dos dados: '+(ativos.map(a=>a.data).filter(Boolean).sort().at(-1)||'não informada');}renderizar();}catch(e){status.className='error';status.textContent='Não foi possível carregar os dados: '+e.message+'. Confira se analises.json está na pasta dados do repositório.';}}
+document.getElementById('busca').addEventListener('input',renderizar);document.getElementById('filtro').addEventListener('change',renderizar);document.getElementById('recarregar').addEventListener('click',carregar);carregar();
+</script>
+</body></html>
