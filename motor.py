@@ -125,46 +125,119 @@ def classificar_velocidade(dados):
 
 def analisar_aceleracao(dados):
 
-    if len(dados) <= PERIODO_ACELERACAO:
+    periodo = PERIODO_ACELERACAO
+    limiar = 0.25
+
+    # Precisamos de dois períodos completos para comparar.
+    if len(dados) < (2 * periodo + 1):
         return "DADOS INSUFICIENTES"
 
-    atual = dados.iloc[-1]
-    anterior = dados.iloc[-1 - PERIODO_ACELERACAO]
+    fechamento_atual = dados["Fechamento"].iloc[-1]
+    fechamento_meio = dados["Fechamento"].iloc[-1 - periodo]
+    fechamento_anterior = dados["Fechamento"].iloc[-1 - 2 * periodo]
 
-    mme21_atual = atual["MME21"]
-    mme21_anterior = anterior["MME21"]
+    atr_atual = dados["ATR14"].iloc[-1]
+    atr_anterior = dados["ATR14"].iloc[-1 - periodo]
 
-    atr = atual["ATR14"]
+    valores = [
+        fechamento_atual,
+        fechamento_meio,
+        fechamento_anterior,
+        atr_atual,
+        atr_anterior
+    ]
 
-    velocidade_atual = atual["Velocidade"]
-    velocidade_anterior = anterior["Velocidade"]
-
-    if pd.isna(atr) or atr <= 0:
+    if any(pd.isna(valor) for valor in valores):
         return "DADOS INSUFICIENTES"
 
-    variacao_mme = (
-        mme21_atual -
-        mme21_anterior
-    ) / atr
+    if atr_atual <= 0 or atr_anterior <= 0:
+        return "DADOS INSUFICIENTES"
 
-    variacao_velocidade = (
-        velocidade_atual -
-        velocidade_anterior
-    )
+    # Movimento recente: últimos cinco candles.
+    movimento_recente = (
+        fechamento_atual - fechamento_meio
+    ) / atr_atual
 
-    if variacao_mme > 0.10:
+    # Movimento anterior: cinco candles anteriores.
+    movimento_anterior = (
+        fechamento_meio - fechamento_anterior
+    ) / atr_anterior
 
-        if variacao_velocidade > 0:
+    # Identifica a direção de cada movimento.
+    if movimento_recente > limiar:
+        direcao_recente = "ALTA"
+    elif movimento_recente < -limiar:
+        direcao_recente = "BAIXA"
+    else:
+        direcao_recente = "NEUTRA"
+
+    if movimento_anterior > limiar:
+        direcao_anterior = "ALTA"
+    elif movimento_anterior < -limiar:
+        direcao_anterior = "BAIXA"
+    else:
+        direcao_anterior = "NEUTRA"
+
+    # --------------------------------------------------------
+    # MOVIMENTO RECENTE SEM DIREÇÃO DEFINIDA
+    # --------------------------------------------------------
+
+    if direcao_recente == "NEUTRA":
+
+        if direcao_anterior == "ALTA":
+            return "DESACELERANDO ALTA"
+
+        if direcao_anterior == "BAIXA":
+            return "DESACELERANDO BAIXA"
+
+        return "ESTÁVEL"
+
+    # --------------------------------------------------------
+    # MUDANÇA DE DIREÇÃO
+    # --------------------------------------------------------
+
+    if (
+        direcao_anterior == "BAIXA"
+        and direcao_recente == "ALTA"
+    ):
+        return "MUDANÇA DE DIREÇÃO PARA ALTA"
+
+    if (
+        direcao_anterior == "ALTA"
+        and direcao_recente == "BAIXA"
+    ):
+        return "MUDANÇA DE DIREÇÃO PARA BAIXA"
+
+    # --------------------------------------------------------
+    # MOVIMENTO DE ALTA
+    # --------------------------------------------------------
+
+    if direcao_recente == "ALTA":
+
+        if movimento_recente > movimento_anterior + limiar:
             return "ACELERANDO ALTA"
 
-        return "ALTA SEM ACELERAÇÃO"
+        if movimento_recente < movimento_anterior - limiar:
+            return "DESACELERANDO ALTA"
 
-    elif variacao_mme < -0.10:
+        return "ESTÁVEL"
 
-        if variacao_velocidade > 0:
+    # --------------------------------------------------------
+    # MOVIMENTO DE BAIXA
+    # --------------------------------------------------------
+
+    if direcao_recente == "BAIXA":
+
+        intensidade_recente = abs(movimento_recente)
+        intensidade_anterior = abs(movimento_anterior)
+
+        if intensidade_recente > intensidade_anterior + limiar:
             return "ACELERANDO BAIXA"
 
-        return "BAIXA SEM ACELERAÇÃO"
+        if intensidade_recente < intensidade_anterior - limiar:
+            return "DESACELERANDO BAIXA"
+
+        return "ESTÁVEL"
 
     return "ESTÁVEL"
 
