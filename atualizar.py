@@ -113,14 +113,26 @@ def json_safe(value: Any):
     return value
 
 
+
 def simplificar(resultado: dict, ativo: str, intraday: dict | None = None) -> dict:
     niveis = resultado.get("niveis", {})
-    alvo = resultado.get("alvo", {})
+    alvo_pnf = resultado.get("alvo", {})
     proj = resultado.get("projecoes", {})
+
+    # Projeção calculada EXCLUSIVAMENTE com o histórico diário.
+    historico = resultado.get("projecao_historica") or {}
+
     ultima = niveis.get("ultima_coluna") or {}
+
+    # Mantém o alvo P&F separado da projeção histórica.
+    # Não usar o alvo P&F para substituir a projeção histórica.
     return json_safe({
         "ativo": ativo,
+
+        # Períodos intraday servem somente para confirmar tendência.
         "intraday": intraday or {},
+
+        # Indicadores calculados com dados diários.
         "data": resultado.get("data"),
         "preco": resultado.get("preco"),
         "mme21": resultado.get("mme21"),
@@ -130,9 +142,13 @@ def simplificar(resultado: dict, ativo: str, intraday: dict | None = None) -> di
         "volume_medio20": resultado.get("volume_medio"),
         "volume_relativo": resultado.get("volume_relativo"),
         "velocidade": resultado.get("velocidade"),
-        "velocidade_classificacao": resultado.get("velocidade_classificacao"),
+        "velocidade_classificacao": resultado.get(
+            "velocidade_classificacao"
+        ),
         "tendencia": resultado.get("tendencia"),
         "aceleracao": resultado.get("aceleracao"),
+
+        # Estrutura P&F: suporte, resistência e situação do preço.
         "box_pnf": niveis.get("box"),
         "colunas_pnf": len(niveis.get("colunas", [])),
         "ultima_coluna_pnf": ultima.get("tipo"),
@@ -140,11 +156,39 @@ def simplificar(resultado: dict, ativo: str, intraday: dict | None = None) -> di
         "fundo_pnf": ultima.get("fundo"),
         "suporte_pnf": niveis.get("suporte"),
         "resistencia_pnf": niveis.get("resistencia"),
-        "alvo_tecnico": alvo.get("alvo"),
-        "distancia_alvo": alvo.get("distancia"),
-        "distancia_alvo_atr": alvo.get("distancia_atr"),
-        "pregoes_estimados": (abs(alvo.get("distancia")) / resultado.get("atr") if alvo.get("distancia") is not None and resultado.get("atr") is not None and resultado.get("atr") > 0 else None),
-        "tipo_alvo": alvo.get("tipo"),
+        "situacao_preco": (
+            resultado.get("situacao_preco", {}).get("situacao_preco")
+            if isinstance(resultado.get("situacao_preco"), dict)
+            else resultado.get("situacao_preco")
+        ),
+
+        # PROJEÇÃO PRINCIPAL: histórico diário de movimentos.
+        "alvo_amplitude_historica": historico.get(
+            "alvo_amplitude_historica"
+        ),
+        "alvo_percentual_historico": historico.get(
+            "alvo_percentual_historico"
+        ),
+        "media_amplitude_historica": historico.get(
+            "media_amplitude_historica"
+        ),
+        "media_amplitude_pct_historica": historico.get(
+            "media_amplitude_pct_historica"
+        ),
+        "tempo_medio_movimento": historico.get(
+            "tempo_medio_movimento"
+        ),
+        "pregoes_estimados": historico.get(
+            "pregoes_estimados_historico"
+        ),
+
+        # Alvo P&F fica disponível separadamente para consulta.
+        "alvo_tecnico_pnf": alvo_pnf.get("alvo"),
+        "distancia_alvo_pnf": alvo_pnf.get("distancia"),
+        "distancia_alvo_atr_pnf": alvo_pnf.get("distancia_atr"),
+        "tipo_alvo_pnf": alvo_pnf.get("tipo"),
+
+        # Referências ATR, sem substituir a projeção principal.
         "projecao_atr1": proj.get("ATR1"),
         "projecao_atr2": proj.get("ATR2"),
         "projecao_atr3": proj.get("ATR3"),
