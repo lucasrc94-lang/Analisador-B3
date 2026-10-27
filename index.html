@@ -458,7 +458,12 @@ document.getElementById("filtro")
 document.getElementById("recarregar")
   .addEventListener("click", carregar);
 
+// Carrega os dados quando o painel é aberto.
 carregar();
+
+// Consulta novamente o JSON a cada 5 minutos.
+// Isso não executa o Python; apenas busca os dados publicados.
+setInterval(carregar, 5 * 60 * 1000);
 </script>
 </body>
 </html>
