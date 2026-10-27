@@ -6,7 +6,7 @@ on:
   schedule:
     # A cada 30 minutos, de segunda a sexta.
     # UTC-3: aproximadamente das 10h às 18h30 em Brasília.
-    - cron: '*/5 10-17 * * 1-5'
+    - cron: '*/5 13-21 * * 1-5'
 
 permissions:
   contents: write
