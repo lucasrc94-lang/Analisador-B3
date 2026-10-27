@@ -12,6 +12,7 @@ import pandas as pd
 import requests
 
 from motor import analisar, calcular_indicadores
+from coletar_intraday import coletar_e_analisar_intraday
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "dados"
@@ -63,7 +64,6 @@ def coletar_dados(ativo: str, tentativas: int = 3) -> pd.DataFrame:
                 "Fechamento": quote.get("close"),
                 "Volume": quote.get("volume"),
             })
-            
             df = df[COLUNAS].dropna(subset=["Data", "Abertura", "Maxima", "Minima", "Fechamento", "Volume"])
             for c in COLUNAS[1:]:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -113,13 +113,14 @@ def json_safe(value: Any):
     return value
 
 
-def simplificar(resultado: dict, ativo: str) -> dict:
+def simplificar(resultado: dict, ativo: str, intraday: dict | None = None) -> dict:
     niveis = resultado.get("niveis", {})
     alvo = resultado.get("alvo", {})
     proj = resultado.get("projecoes", {})
     ultima = niveis.get("ultima_coluna") or {}
     return json_safe({
         "ativo": ativo,
+        "intraday": intraday or {},
         "data": resultado.get("data"),
         "preco": resultado.get("preco"),
         "mme21": resultado.get("mme21"),
@@ -139,50 +140,10 @@ def simplificar(resultado: dict, ativo: str) -> dict:
         "fundo_pnf": ultima.get("fundo"),
         "suporte_pnf": niveis.get("suporte"),
         "resistencia_pnf": niveis.get("resistencia"),
-        
-        "situacao_preco": (
-            resultado.get("situacao_preco") or {}
-        ).get("situacao_preco"),
-
-        "distancia_suporte_atr": (
-            resultado.get("situacao_preco") or {}
-        ).get("distancia_suporte_atr"),
-
-        "distancia_resistencia_atr": (
-            resultado.get("situacao_preco") or {}
-        ).get("distancia_resistencia_atr"),
-        
         "alvo_tecnico": alvo.get("alvo"),
         "distancia_alvo": alvo.get("distancia"),
         "distancia_alvo_atr": alvo.get("distancia_atr"),
-
-        "alvo_amplitude_historica": (
-            resultado.get("projecao_historica") or {}
-        ).get("alvo_amplitude_historica"),
-
-        "alvo_percentual_historico": (
-            resultado.get("projecao_historica") or {}
-        ).get("alvo_percentual_historico"),
-
-        "media_amplitude_historica": (
-            resultado.get("projecao_historica") or {}
-        ).get("media_amplitude_historica"),
-
-        "media_amplitude_pct_historica": (
-            resultado.get("projecao_historica") or {}
-        ).get("media_amplitude_pct_historica"),
-
-        "tempo_medio_movimento": (
-            resultado.get("projecao_historica") or {}
-        ).get("tempo_medio_movimento"),
-
-        "movimentos_historicos": (
-            resultado.get("projecao_historica") or {}
-        ).get("movimentos_historicos"),
-
-        "pregoes_estimados": resultado.get(
-        "pregoes_estimados_historico"
-),
+        "pregoes_estimados": (abs(alvo.get("distancia")) / resultado.get("atr") if alvo.get("distancia") is not None and resultado.get("atr") is not None and resultado.get("atr") > 0 else None),
         "tipo_alvo": alvo.get("tipo"),
         "projecao_atr1": proj.get("ATR1"),
         "projecao_atr2": proj.get("ATR2"),
@@ -197,12 +158,16 @@ def main():
     erros = []
     for ativo in ativos:
         try:
-            dados = coletar_dados(ativo)    
+            dados = coletar_dados(ativo)
             resultado = analisar(dados)
             if not resultado:
                 raise ValueError("Motor não conseguiu produzir uma análise (ATR/histórico insuficiente).")
-            resultados.append(simplificar(resultado, ativo))
-            print(f"OK {ativo}: {resultado['data']} | preço={resultado['preco']}")
+            # Intraday é complementar: falhas não bloqueiam a análise diária.
+            intraday = coletar_e_analisar_intraday(ativo)
+            resultados.append(simplificar(resultado, ativo, intraday))
+            status_1h = intraday.get("1h", {}).get("tendencia", intraday.get("1h", {}).get("status", "N/D"))
+            status_15m = intraday.get("15m", {}).get("tendencia", intraday.get("15m", {}).get("status", "N/D"))
+            print(f"OK {ativo}: {resultado['data']} | preço={resultado['preco']} | 1h={status_1h} | 15m={status_15m}")
         except Exception as exc:
             erros.append({"ativo": ativo, "erro": str(exc)})
             print(f"ERRO {ativo}: {exc}")
