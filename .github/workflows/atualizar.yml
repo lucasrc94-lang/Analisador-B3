@@ -3,9 +3,8 @@ name: Atualizar analisador B3
 on:
   workflow_dispatch:
   schedule:
-    # 18h30 em Brasília (UTC-3), de segunda a sexta.
-    # O GitHub pode iniciar tarefas agendadas com algum atraso.
-    - cron: '30 21 * * 1-5'
+    # Solicita execução a cada 10 minutos.
+    - cron: '8/10 * * * *'
 
 permissions:
   contents: write
