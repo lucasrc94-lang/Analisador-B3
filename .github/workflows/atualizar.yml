@@ -4,7 +4,7 @@ name: Atualizar analisador B3
 on:
   workflow_dispatch:
   schedule:
-    # A cada 30 minutos, de segunda a sexta.
+    # A cada 05 minutos, de segunda a sexta.
     # UTC-3: aproximadamente das 10h às 18h30 em Brasília.
     - cron: '2-59/5 13-21 * * 1-5'
 
