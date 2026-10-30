@@ -4,7 +4,7 @@ name: Atualizar analisador B3
 on:
   workflow_dispatch:
   schedule:
-    - cron: '3/10 * * * 1-5'
+    - cron: '*/15 * * * 1-5'
 permissions:
   contents: write
 
