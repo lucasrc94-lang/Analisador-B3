@@ -1,6 +1,6 @@
 {
-  "gerado_em_utc": "2026-10-30T23:04:49.699108+00:00",
-  "gerado_em_brasilia": "2026-10-30T20:04:49.699125-03:00",
+  "gerado_em_utc": "2026-10-31T02:19:32.491996+00:00",
+  "gerado_em_brasilia": "2026-10-30T23:19:32.492010-03:00",
   "fonte": "Yahoo Finance chart API; dados diários, sujeitos a atraso/indisponibilidade",
   "ativos_configurados": [
     "B3SA3",
@@ -37,7 +37,7 @@
           "mme200": 18.337162112832083,
           "atr14": 0.16571412767682756,
           "volume": 0.0,
-          "volume_medio20": 7532170.0,
+          "volume_medio20": 7165460.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -50,7 +50,7 @@
           "mme200": 16.179530023263563,
           "atr14": 0.07857159205845436,
           "volume": 0.0,
-          "volume_medio20": 2490460.0,
+          "volume_medio20": 2490425.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -101,7 +101,7 @@
           "mme200": 53.34301528409572,
           "atr14": 0.37285750252859934,
           "volume": 0.0,
-          "volume_medio20": 4614920.0,
+          "volume_medio20": 4696940.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -114,7 +114,7 @@
           "mme200": 53.87031574628622,
           "atr14": 0.18214334760393416,
           "volume": 0.0,
-          "volume_medio20": 1767250.0,
+          "volume_medio20": 1767200.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -165,7 +165,7 @@
           "mme200": 66.22084180105468,
           "atr14": 0.6228572300502232,
           "volume": 0.0,
-          "volume_medio20": 2402375.0,
+          "volume_medio20": 1988945.0,
           "tendencia": "NEUTRA / MISTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -178,7 +178,7 @@
           "mme200": 62.49046862836366,
           "atr14": 0.20285660879952566,
           "volume": 0.0,
-          "volume_medio20": 687365.0,
+          "volume_medio20": 686415.0,
           "tendencia": "NEUTRA / MISTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -229,7 +229,7 @@
           "mme200": 43.92506711177903,
           "atr14": 0.2621432713099888,
           "volume": 0.0,
-          "volume_medio20": 3806920.0,
+          "volume_medio20": 3517490.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -293,7 +293,7 @@
           "mme200": 20.871845703767445,
           "atr14": 0.1464285169328962,
           "volume": 0.0,
-          "volume_medio20": 7395745.0,
+          "volume_medio20": 5658385.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -306,7 +306,7 @@
           "mme200": 18.4372058661901,
           "atr14": 0.07499980926513672,
           "volume": 0.0,
-          "volume_medio20": 3283165.0,
+          "volume_medio20": 1455230.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -357,7 +357,7 @@
           "mme200": 17.84413962652339,
           "atr14": 0.12285709381103516,
           "volume": 0.0,
-          "volume_medio20": 6617615.0,
+          "volume_medio20": 6125980.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -370,7 +370,7 @@
           "mme200": 15.889211602601582,
           "atr14": 0.06071397236415318,
           "volume": 0.0,
-          "volume_medio20": 2534775.0,
+          "volume_medio20": 2534630.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -421,7 +421,7 @@
           "mme200": 48.38684371556122,
           "atr14": 0.4871433803013388,
           "volume": 0.0,
-          "volume_medio20": 1480810.0,
+          "volume_medio20": 1489385.0,
           "tendencia": "NEUTRA / MISTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -434,7 +434,7 @@
           "mme200": 47.45026093547691,
           "atr14": 0.2049999237060547,
           "volume": 0.0,
-          "volume_medio20": 462240.0,
+          "volume_medio20": 462065.0,
           "tendencia": "NEUTRA / MISTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -485,7 +485,7 @@
           "mme200": 15.700646243034335,
           "atr14": 0.11714267730712866,
           "volume": 0.0,
-          "volume_medio20": 4706415.0,
+          "volume_medio20": 4422690.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -498,7 +498,7 @@
           "mme200": 15.30893257241643,
           "atr14": 0.044999940054757256,
           "volume": 0.0,
-          "volume_medio20": 1153710.0,
+          "volume_medio20": 1153545.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -549,7 +549,7 @@
           "mme200": 67.86787102268931,
           "atr14": 0.6521432059151786,
           "volume": 0.0,
-          "volume_medio20": 814395.0,
+          "volume_medio20": 726195.0,
           "tendencia": "ALTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -562,7 +562,7 @@
           "mme200": 70.72919332344073,
           "atr14": 0.2749988010951451,
           "volume": 0.0,
-          "volume_medio20": 207455.0,
+          "volume_medio20": 207450.0,
           "tendencia": "ALTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -613,7 +613,7 @@
           "mme200": 39.811725513956155,
           "atr14": 0.34857164110456246,
           "volume": 0.0,
-          "volume_medio20": 1878000.0,
+          "volume_medio20": 1882280.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -677,7 +677,7 @@
           "mme200": 5.379105140837395,
           "atr14": 0.08214288098471505,
           "volume": 0.0,
-          "volume_medio20": 2175995.0,
+          "volume_medio20": 2217285.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -741,7 +741,7 @@
           "mme200": 25.230354775217798,
           "atr14": 0.23928560529436385,
           "volume": 0.0,
-          "volume_medio20": 1290595.0,
+          "volume_medio20": 1217025.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -805,7 +805,7 @@
           "mme200": 11.286401816449384,
           "atr14": 0.11285700116838727,
           "volume": 0.0,
-          "volume_medio20": 2100085.0,
+          "volume_medio20": 2105435.0,
           "tendencia": "NEUTRA / MISTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -869,7 +869,7 @@
           "mme200": 3.9166030365344486,
           "atr14": 0.051428522382463725,
           "volume": 0.0,
-          "volume_medio20": 630055.0,
+          "volume_medio20": 629150.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -882,7 +882,7 @@
           "mme200": 3.4075060387331626,
           "atr14": 0.02642854622432164,
           "volume": 0.0,
-          "volume_medio20": 87505.0,
+          "volume_medio20": 86820.0,
           "tendencia": "NEUTRA / MISTA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -933,7 +933,7 @@
           "mme200": 2.34329561004986,
           "atr14": 0.036428587777273994,
           "volume": 0.0,
-          "volume_medio20": 6570760.0,
+          "volume_medio20": 7439805.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -997,7 +997,7 @@
           "mme200": 27.199741057635123,
           "atr14": 0.17285728454589894,
           "volume": 0.0,
-          "volume_medio20": 448575.0,
+          "volume_medio20": 448405.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -1010,7 +1010,7 @@
           "mme200": 25.39354876532858,
           "atr14": 0.054999896458217075,
           "volume": 0.0,
-          "volume_medio20": 82520.0,
+          "volume_medio20": 82065.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -1061,7 +1061,7 @@
           "mme200": 14.738549077342055,
           "atr14": 0.13714286259242453,
           "volume": 0.0,
-          "volume_medio20": 269310.0,
+          "volume_medio20": 187680.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
@@ -1074,7 +1074,7 @@
           "mme200": 13.901168066624225,
           "atr14": 0.05714273452758789,
           "volume": 0.0,
-          "volume_medio20": 72245.0,
+          "volume_medio20": 34615.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         }
@@ -1125,7 +1125,7 @@
           "mme200": 14.213604036348263,
           "atr14": 0.0907143184116911,
           "volume": 0.0,
-          "volume_medio20": 3139355.0,
+          "volume_medio20": 3148445.0,
           "tendencia": "BAIXA",
           "fonte": "Yahoo Finance chart API; intraday sujeito a atraso, limites e indisponibilidade"
         },
