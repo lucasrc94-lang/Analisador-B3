@@ -1,5 +1,4 @@
 
-
 """
 Coleta de dados históricos de opções da B3 utilizando b3quant.
 
