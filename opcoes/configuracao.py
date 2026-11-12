@@ -96,6 +96,7 @@ IV_MINIMA_ALERTA = 0.00
 
 IV_MAXIMA_ALERTA = 3.00
 
+DIAS_UTEIS_ANO = 252
 
 # ============================================================
 # 6. PARAMETROS DE PROBABILIDADE
