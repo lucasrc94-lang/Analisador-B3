@@ -95,7 +95,7 @@ def obter_preco_venda(opcao):
     return None, False
 
 
-def identificar_pozi​​nho(opcao, preco_ativo, premio_maximo):
+def identificar_pozinho(opcao, preco_ativo, premio_maximo):
     """
     Identifica opção fora do dinheiro com prêmio limitado.
 
@@ -187,7 +187,7 @@ def gerar_pozinho(opcao, preco_ativo, premio_maximo):
     elif REGRA_POZINHOS != "both":
         return None
 
-    if not identificar_pozi​​nho(
+    if not identificar_pozinho(
         opcao,
         preco_ativo,
         premio_maximo
