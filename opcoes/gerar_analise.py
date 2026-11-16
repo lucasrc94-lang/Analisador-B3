@@ -36,22 +36,20 @@ class ErroAnalise(Exception):
     """Erro durante a geração da análise consolidada."""
 
 
+
 def extrair_registros_normalizados(resultado):
-    """Extrai os registros válidos da normalização."""
+    """Extrai os registros padronizados da normalização."""
 
     if not isinstance(resultado, dict):
         raise ErroAnalise(
             "Resultado da normalização em formato inválido."
         )
 
-    registros = resultado.get("validos")
-
-    if registros is None:
-        registros = resultado.get("registros_validos")
+    registros = resultado.get("dados")
 
     if registros is None:
         raise ErroAnalise(
-            "A normalização não retornou a lista de registros válidos."
+            "A normalização não retornou a lista de registros."
         )
 
     if not isinstance(registros, list):
