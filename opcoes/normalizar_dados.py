@@ -9,7 +9,7 @@ campos essenciais ausentes ou inválidos.
 from datetime import datetime
 import re
 import unicodedata
-
+import math
 import pandas as pd
 
 
@@ -21,6 +21,7 @@ CAMPOS_OBRIGATORIOS = [
     "preco_fechamento",
     "ativo_subjacente",
 ]
+
 
 
 ALIASES = {
@@ -68,6 +69,11 @@ ALIASES = {
         "codigo_ativo",
         "ticker_ativo",
     ],
+    "data_pregao": [
+        "data_pregao",
+        "trade_date",
+        "data_negociacao",
+    ],
     "volume": [
         "volume",
         "quantidade_negociada",
@@ -75,17 +81,23 @@ ALIASES = {
     ],
     "bid": [
         "bid",
+        "best_bid",
         "melhor_compra",
         "preco_compra",
     ],
     "ask": [
         "ask",
+        "best_ask",
         "melhor_venda",
         "preco_venda",
     ],
     "open_interest": [
         "open_interest",
         "interesse_aberto",
+    ],
+    "fator_cotacao": [
+        "fator_cotacao",
+        "quote_factor",
     ],
 }
 
@@ -133,17 +145,22 @@ def identificar_colunas(df):
     return mapa
 
 
+
 def converter_numero(valor):
-    """Converte valores numéricos sem inventar valores ausentes."""
+    """Converte números e rejeita valores não finitos."""
 
     if valor is None or pd.isna(valor):
         return None
 
     try:
-        return float(valor)
-
-    except (ValueError, TypeError):
+        numero = float(valor)
+    except (ValueError, TypeError, OverflowError):
         return None
+
+    if not math.isfinite(numero):
+        return None
+
+    return numero
 
 
 def converter_data(valor):
@@ -243,7 +260,13 @@ def normalizar_registros(dados):
             "open_interest": converter_numero(
                 registro.get("open_interest")
             ),
-        }
+            "data_pregao": converter_data(
+                registro.get("data_pregao")
+            ),
+            "fator_cotacao": converter_numero(
+                registro.get("fator_cotacao")
+            ),
+            }
 
         pendencias = []
 
