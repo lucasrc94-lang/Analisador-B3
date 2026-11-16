@@ -60,14 +60,15 @@ def calcular_spread_relativo(bid, ask):
     return (ask - bid) / preco_medio
 
 
+
 def avaliar_opcao(opcao):
     """
     Avalia individualmente uma opção normalizada.
 
-    Espera os campos:
-    codigo_opcao, tipo, strike, vencimento,
-    preco_fechamento, ativo_subjacente,
-    volume, bid, ask e open_interest.
+    A ausência de open interest não reprova automaticamente
+    o registro, mas impede sua classificação como executável.
+
+    Bid e Ask ausentes permitem apenas análise teórica.
     """
 
     if not isinstance(opcao, dict):
@@ -97,11 +98,13 @@ def avaliar_opcao(opcao):
 
     if not numero_valido(opcao.get("strike")):
         motivos.append("Strike inválido ou ausente.")
+
     elif float(opcao["strike"]) <= 0:
         motivos.append("Strike deve ser positivo.")
 
     if not numero_valido(opcao.get("preco_fechamento")):
         motivos.append("Preço de fechamento inválido.")
+
     elif float(opcao["preco_fechamento"]) <= 0:
         motivos.append("Preço de fechamento deve ser positivo.")
 
@@ -111,24 +114,38 @@ def avaliar_opcao(opcao):
 
     if not numero_valido(volume):
         motivos.append("Volume ausente ou inválido.")
+
     elif float(volume) < VOLUME_MINIMO_OPCAO:
         motivos.append("Volume abaixo do mínimo configurado.")
 
-    # 4. Contratos em aberto
+    # 4. Open interest
+    # Ausência é uma limitação informacional.
+    # Valor disponível abaixo do mínimo continua sendo reprovação.
 
     open_interest = opcao.get("open_interest")
 
-    if not numero_valido(open_interest):
-        motivos.append("Open interest ausente ou inválido.")
+    open_interest_valido = numero_valido(open_interest)
+
+    if not open_interest_valido:
+        motivos.append(
+            "Open interest indisponível; "
+            "liquidez não confirmada."
+        )
+
     elif float(open_interest) < OPEN_INTEREST_MINIMO:
-        motivos.append("Open interest abaixo do mínimo configurado.")
+        motivos.append(
+            "Open interest abaixo do mínimo configurado."
+        )
 
     # 5. Bid e Ask
 
     bid = opcao.get("bid")
     ask = opcao.get("ask")
 
-    spread_relativo = calcular_spread_relativo(bid, ask)
+    spread_relativo = calcular_spread_relativo(
+        bid,
+        ask,
+    )
 
     bid_ask_validos = spread_relativo is not None
 
@@ -142,48 +159,59 @@ def avaliar_opcao(opcao):
             "Spread entre Bid e Ask acima do limite."
         )
 
-    # 6. Classificação final
+    # 6. Classificação
 
     motivos_reprovacao = [
-        motivo for motivo in motivos
-        if motivo != "Bid e Ask válidos não disponíveis."
+        motivo
+        for motivo in motivos
+        if motivo not in (
+            "Bid e Ask válidos não disponíveis.",
+            "Open interest indisponível; "
+            "liquidez não confirmada.",
+        )
     ]
 
     if motivos_reprovacao:
         status = "REPROVADA"
-        executavel = False
 
-    elif not bid_ask_validos:
+    elif not bid_ask_validos or not open_interest_valido:
         status = "APROVADA_TEORICA"
-        executavel = False
 
     else:
         status = "APROVADA_EXECUTAVEL"
-        executavel = True
 
-    if (
-        not bid_ask_validos
-        and EXIGIR_BID_ASK_VALIDOS
-        and status == "APROVADA_TEORICA"
-    ):
+    executavel = (
+        status == "APROVADA_EXECUTAVEL"
+        and bid_ask_validos
+        and open_interest_valido
+    )
+
+    if status == "APROVADA_TEORICA":
         observacao = (
             "Aprovada apenas para análise teórica. "
-            "Não pode gerar recomendação executável."
+            "A liquidez ou os preços executáveis "
+            "não estão completamente confirmados."
         )
+
     elif status == "APROVADA_EXECUTAVEL":
         observacao = (
             "Dados aprovados nos filtros básicos. "
             "A execução ainda depende da validação "
             "das demais condições da operação."
         )
+
     else:
-        observacao = "Opção reprovada nos filtros de qualidade."
+        observacao = (
+            "Opção reprovada nos filtros de qualidade."
+        )
 
     return {
         "codigo_opcao": opcao.get("codigo_opcao"),
         "status": status,
         "aprovada": status != "REPROVADA",
         "executavel": executavel,
+        "open_interest_valido": open_interest_valido,
+        "bid_ask_validos": bid_ask_validos,
         "spread_relativo": spread_relativo,
         "motivos": motivos,
         "observacao": observacao,
