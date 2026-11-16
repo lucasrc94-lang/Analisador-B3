@@ -22,40 +22,70 @@ CAMPOS_OBRIGATORIOS = [
     "ativo_subjacente",
 ]
 
+
 ALIASES = {
     "codigo_opcao": [
-        "codigo_opcao", "codigo", "ticker", "symbol",
-        "instrumento", "nome"
+        "codigo_opcao",
+        "codigo",
+        "ticker",
+        "symbol",
+        "instrumento",
+        "nome",
     ],
     "tipo": [
-        "tipo", "tipo_opcao", "option_type", "call_put"
+        "tipo",
+        "tipo_opcao",
+        "option_type",
+        "call_put",
+        "instrument_type",
     ],
     "strike": [
-        "strike", "preco_exercicio", "preco_exercicio_opcao"
+        "strike",
+        "preco_exercicio",
+        "preco_exercicio_opcao",
+        "strike_price",
     ],
     "vencimento": [
-        "vencimento", "data_vencimento", "expiration",
-        "expiration_date"
+        "vencimento",
+        "data_vencimento",
+        "expiration",
+        "expiration_date",
+        "maturity_date",
     ],
     "preco_fechamento": [
-        "preco_fechamento", "fechamento", "preco",
-        "ultimo", "last", "close"
+        "preco_fechamento",
+        "fechamento",
+        "preco",
+        "ultimo",
+        "last",
+        "close",
+        "close_price",
     ],
     "ativo_subjacente": [
-        "ativo_subjacente", "ativo", "underlying",
-        "codigo_ativo", "ticker_ativo"
+        "ativo_subjacente",
+        "ativo",
+        "underlying",
+        "codigo_ativo",
+        "ticker_ativo",
     ],
     "volume": [
-        "volume", "quantidade_negociada", "volume_negociado"
+        "volume",
+        "quantidade_negociada",
+        "volume_negociado",
     ],
     "bid": [
-        "bid", "melhor_compra", "preco_compra"
+        "bid",
+        "melhor_compra",
+        "preco_compra",
     ],
     "ask": [
-        "ask", "melhor_venda", "preco_venda"
+        "ask",
+        "melhor_venda",
+        "preco_venda",
     ],
     "open_interest": [
-        "open_interest", "interesse_aberto"
+        "open_interest",
+        "interesse_aberto",
     ],
 }
 
